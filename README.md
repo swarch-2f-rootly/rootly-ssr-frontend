@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rootly SSR Frontend
 
-## Getting Started
+Frontend SSR de Rootly construido con Next.js 15 y arquitectura hexagonal.
 
-First, run the development server:
+## 🏗️ Arquitectura
+
+- **Next.js 15** con App Router
+- **TypeScript** para tipado estático
+- **Tailwind CSS** para estilos
+- **Arquitectura Hexagonal** (Ports & Adapters)
+- **TanStack Query** para estado del servidor
+- **Zustand** para estado del cliente
+- **Zod** para validación de esquemas
+
+## 🚀 Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📁 Estructura
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/                 # Next.js App Router
+├── domain/             # Entidades de dominio
+├── application/        # Casos de uso y puertos
+├── infrastructure/     # Adaptadores externos
+└── ui/                # Componentes de interfaz
+    ├── components/     # Componentes reutilizables
+    ├── features/       # Características por dominio
+    └── providers/      # Proveedores de contexto
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🌿 Flujo de Desarrollo
 
-## Learn More
+### Crear Nueva Rama
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Usar el script de utilidad (Linux/Mac)
+./scripts/create-branch.sh 001 "user-authentication"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# O en PowerShell (Windows)
+.\scripts\create-branch.ps1 001 "user-authentication"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# O manualmente
+git checkout develop
+git pull origin develop
+git checkout -b feature-001-user-authentication
+```
 
-## Deploy on Vercel
+### Proceso de Desarrollo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Crear rama** desde `develop`
+2. **Desarrollar** la funcionalidad
+3. **Commit** con mensajes descriptivos
+4. **Push** de la rama
+5. **Crear PR** hacia `develop`
+6. **Code review** y aprobación
+7. **Merge** a `develop`
+8. **Eliminar** la rama
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Nomenclatura de Ramas
+
+- `feature-xxx-texto` - Nuevas funcionalidades
+- `hotfix-xxx-texto` - Correcciones urgentes
+- `release-xxx-texto` - Preparación de releases
+
+Donde `xxx` es un número de 3 dígitos y `texto` está en kebab-case.
+
+## 🔌 Integración API
+
+El frontend actúa como "Closed API" encapsulando la comunicación con los microservicios backend.
+
+## 📚 Recursos
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TanStack Query](https://tanstack.com/query)
+- [Zustand](https://zustand-demo.pmnd.rs/)
+- [Zod](https://zod.dev/)
