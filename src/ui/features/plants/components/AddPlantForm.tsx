@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useCreatePlant } from '@/lib/api/plants-api';
 import {
   ArrowLeft,
   Leaf,
@@ -19,11 +20,11 @@ import {
 const AddPlantForm: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const createPlantMutation = useCreatePlant();
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -33,19 +34,28 @@ const AddPlantForm: React.FC = () => {
     },
     onSubmit: async ({ value }) => {
       try {
-        setIsSubmitting(true);
         console.log('Submitting plant data:', value);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        let photoFilename = null;
+        
+        // For now, we'll create the plant first, then upload the photo
+        // This is because the photo upload endpoint requires a plant_id
+        console.log('Creating plant first, photo will be uploaded separately');
+        
+        // Create plant using the API
+        await createPlantMutation.mutateAsync({
+          name: value.name,
+          species: value.species,
+          description: value.description,
+          user_id: user?.id || '',
+          photo_filename: photoFilename,
+        });
         
         console.log('Plant created successfully');
         router.push('/monitoring?created=true');
       } catch (error) {
         console.error('Error creating plant:', error);
         router.push('/monitoring?error=true');
-      } finally {
-        setIsSubmitting(false);
       }
     },
   });
@@ -319,7 +329,7 @@ const AddPlantForm: React.FC = () => {
               <form.Subscribe
                 selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
                 children={({ canSubmit, isSubmitting: formIsSubmitting }) => {
-                  const submitting = isSubmitting || formIsSubmitting;
+                  const submitting = createPlantMutation.isPending || formIsSubmitting;
                   return (
                     <button
                       type="submit"

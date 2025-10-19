@@ -4,30 +4,38 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Search, Leaf, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useUserPlants } from '@/lib/api/plants-api';
+import type { Plant } from '@/lib/api/plants-api';
+import { useAuth } from '@/hooks/useAuth';
 
-// Mock data para plantas
-const mockPlants = [
-  {
-    id: 1,
-    name: "Tomate Chonto",
-    species: "Solanum lycopersicum",
-    description: "Tomate chonto de excelente calidad",
-    photo_filename: "tomate_chonto.jpg",
-    created_at: "2024-01-15T10:30:00Z"
-  }
-];
 
 export default function PlantsDashboard() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading] = useState(false);
-  const [error] = useState(null);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
+  // Usar el hook de la API REST real
+  const { data: plants = [], isLoading, error } = useUserPlants(user?.id || '');
+  
+  // Debug: log plant data
+  React.useEffect(() => {
+    if (plants.length > 0) {
+      console.log('Plants data:', plants);
+      plants.forEach(plant => {
+        console.log(`Plant ${plant.id}:`, {
+          name: plant.name,
+          photo_filename: plant.photo_filename,
+          hasPhoto: !!plant.photo_filename
+        });
+      });
+    }
+  }, [plants]);
+
   // Filter plants based on search (client-side filtering)
-  const filteredPlants = mockPlants.filter((plant) => {
+  const filteredPlants = plants.filter((plant: Plant) => {
     const matchesSearch = searchTerm === "" ||
       plant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       plant.species.toLowerCase().includes(searchTerm.toLowerCase());
@@ -39,7 +47,7 @@ export default function PlantsDashboard() {
     setSearchTerm(value);
   };
 
-  const totalPlants = mockPlants.length;
+  const totalPlants = plants.length;
 
   // Effect to show notification when a plant is created
   useEffect(() => {
@@ -181,7 +189,7 @@ export default function PlantsDashboard() {
               transition={{ delay: 0.6, duration: 0.6 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {filteredPlants.map((plant) => (
+              {filteredPlants.map((plant: Plant) => (
                 <div
                   key={plant.id}
                   className="bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 rounded-xl overflow-hidden"
@@ -189,11 +197,14 @@ export default function PlantsDashboard() {
                   <Link href={`/monitoring/${plant.id}`} className="block">
                     <div className="relative">
                       <img
-                        src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                        src={plant.photo_filename 
+                          ? `http://localhost:8080/api/v1/plants/${plant.id}/photo` 
+                          : "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                        }
                         alt={plant.name}
                         className="w-full h-36 object-cover"
                         onError={(e) => {
-                          // Fallback to default image if plant photo fails to load
+                          console.log('Image load error for plant:', plant.id, 'photo_filename:', plant.photo_filename);
                           const target = e.target as HTMLImageElement;
                           if (target.src !== 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80') {
                             target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80';

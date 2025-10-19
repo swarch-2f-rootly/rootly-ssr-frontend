@@ -38,3 +38,4 @@ Todas las ramas deben seguir el formato: `feature-xxx-texto`
 - `feature-xxx-*` - Nuevas funcionalidades
 - `hotfix-xxx-*` - Correcciones urgentes (solo desde main)
 - `release-xxx-*` - Preparación de releases
+

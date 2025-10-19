@@ -54,3 +54,4 @@ jobs:
           echo "Expected format: feature-xxx-texto, hotfix-xxx-texto, or release-xxx-texto"
           echo "Where xxx is a 3-digit number and texto is kebab-case"
           exit 1
+

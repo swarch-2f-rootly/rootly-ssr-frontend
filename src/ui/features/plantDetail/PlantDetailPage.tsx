@@ -9,6 +9,8 @@ import {
   Wind,
   Sun,
 } from "lucide-react";
+import { usePlant, useDeletePlant } from "@/lib/api/plants-api";
+import { useAuth } from "@/hooks/useAuth";
 
 // Importar componentes separados
 import PlantStatusCard from "./components/PlantStatusCard";
@@ -44,6 +46,7 @@ const PlantDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const plantId = params.plantId as string;
+  const { user } = useAuth();
   
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -52,10 +55,19 @@ const PlantDetailPage: React.FC = () => {
   // Estado para modales de métricas
   const [openModal, setOpenModal] = useState<'temperature' | 'air_humidity' | 'soil_humidity' | 'light_intensity' | null>(null);
 
-  // Mock data - en una app real esto vendría de la API
-  const plant = mockPlant;
-  const isLoading = false;
-  const error = null;
+  // Debug: log plantId
+  React.useEffect(() => {
+    console.log('PlantDetailPage - plantId:', plantId);
+  }, [plantId]);
+
+  // Usar la API real
+  const { data: plant, isLoading, error } = usePlant(plantId);
+  const deletePlantMutation = useDeletePlant();
+  
+  // Debug: log plant data
+  React.useEffect(() => {
+    console.log('PlantDetailPage - plant data:', { plant, isLoading, error });
+  }, [plant, isLoading, error]);
   const plantDevices = [
     // Sin dispositivos asignados por defecto para simular el estado sin hardware
   ];
@@ -119,8 +131,8 @@ const PlantDetailPage: React.FC = () => {
 
   const handleDeletePlant = async () => {
     try {
-      // Simulate API call
       console.log('Deleting plant:', plantId);
+      await deletePlantMutation.mutateAsync(plantId);
       router.push('/monitoring');
     } catch (error) {
       console.error('Error eliminando planta:', error);

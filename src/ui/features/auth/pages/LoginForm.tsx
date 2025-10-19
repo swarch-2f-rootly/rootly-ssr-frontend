@@ -2,13 +2,15 @@
 
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
-const LoginSchema = z.object({ email: z.string().email("Correo inválido"), password: z.string().min(6, "Mínimo 6 caracteres") });
+const LoginSchema = z.object({ 
+  email: z.string().email("Correo inválido"), 
+  password: z.string().min(6, "Mínimo 6 caracteres") 
+});
 
 export default function LoginForm() {
   const router = useRouter();
@@ -27,29 +29,14 @@ export default function LoginForm() {
     onSubmit: async ({ value }) => {
       setError(null);
       try {
-        // TODO: Conectar con API real
-        // Por ahora simulamos un login exitoso
-        const mockTokenData = {
-          access_token: "mock_access_token",
-          refresh_token: "mock_refresh_token",
-          user: {
-            id: "1",
-            email: value.email,
-            first_name: "Usuario",
-            last_name: "Demo",
-            full_name: "Usuario Demo",
-            profile_photo_url: null,
-            is_active: true,
-            roles: ["user"],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        };
-        
-        login(mockTokenData);
+        // Usar el hook de autenticación real
+        await login({
+          email: value.email,
+          password: value.password,
+        });
         router.push("/monitoring");
-      } catch (err) {
-        setError("Error al iniciar sesión");
+      } catch (err: any) {
+        setError(err?.message || "Error al iniciar sesión");
       }
     },
   });

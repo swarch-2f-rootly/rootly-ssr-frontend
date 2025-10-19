@@ -32,29 +32,16 @@ export default function RegisterForm() {
     onSubmit: async ({ value }) => {
       setError(null);
       try {
-        // TODO: Conectar con API real
-        // Por ahora simulamos un registro exitoso y login automático
-        const mockTokenData = {
-          access_token: "mock_access_token",
-          refresh_token: "mock_refresh_token",
-          user: {
-            id: "1",
-            email: value.email,
-            first_name: value.firstName,
-            last_name: value.lastName,
-            full_name: `${value.firstName} ${value.lastName}`,
-            profile_photo_url: null,
-            is_active: true,
-            roles: ["user"],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        };
-        
-        login(mockTokenData);
+        // Usar el hook de autenticación real
+        await register({
+          email: value.email,
+          password: value.password,
+          first_name: value.firstName,
+          last_name: value.lastName,
+        });
         router.push("/monitoring");
-      } catch (err) {
-        setError("Error al registrar usuario");
+      } catch (err: any) {
+        setError(err?.message || "Error al registrar usuario");
       }
     },
   });

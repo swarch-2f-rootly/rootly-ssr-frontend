@@ -158,7 +158,7 @@ const ProfileDashboard: React.FC = () => {
                   </div>
                   <div className="text-left">
                     <div className="text-sm text-slate-500">Nombre</div>
-                    <div className="font-semibold text-slate-800">{user.first_name} {user.last_name}</div>
+                    <div className="font-semibold text-slate-800">{user.first_name || user.name || 'Sin nombre'} {user.last_name || ''}</div>
                   </div>
                 </div>
 
@@ -180,11 +180,11 @@ const ProfileDashboard: React.FC = () => {
                     <div className="text-sm text-slate-500">Estado</div>
                     <div className="font-semibold text-slate-800">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        user.is_active
+                        user.is_active !== false
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {user.is_active ? 'Activo' : 'Inactivo'}
+                        {user.is_active !== false ? 'Activo' : 'Inactivo'}
                       </span>
                     </div>
                   </div>
@@ -197,7 +197,7 @@ const ProfileDashboard: React.FC = () => {
                   <div className="text-left">
                     <div className="text-sm text-slate-500">Roles</div>
                     <div className="font-semibold text-slate-800">
-                      {user.roles.length > 0 ? user.roles.join(', ') : 'Sin roles asignados'}
+                      {user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'Sin roles asignados'}
                     </div>
                   </div>
                 </div>
@@ -213,14 +213,14 @@ const ProfileDashboard: React.FC = () => {
               <div className="w-px h-12 bg-slate-200"></div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-emerald-600">
-                  {Math.floor((new Date().getTime() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))}
+                  {user.created_at ? Math.floor((new Date().getTime() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0}
                 </div>
                 <div className="text-sm text-slate-500">Días activo</div>
               </div>
               <div className="w-px h-12 bg-slate-200"></div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-emerald-600">
-                  {new Date(user.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                  {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) : 'N/A'}
                 </div>
                 <div className="text-sm text-slate-500">Miembro desde</div>
               </div>
