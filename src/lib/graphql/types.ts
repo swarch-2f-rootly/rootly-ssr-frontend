@@ -116,6 +116,30 @@ export interface Plant {
   updated_at: string;
 }
 
+export interface Device {
+  id: string;
+  name: string;
+  description?: string;
+  version?: string;
+  category: 'microcontroller' | 'sensor';
+  user_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  profile_photo_url?: string;
+  is_active: boolean;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 // Plant-related input types
 export interface CreatePlantInput {
   name: string;
@@ -138,6 +162,22 @@ export interface PlantFilterInput {
   name_contains?: string;
   limit?: number;
   offset?: number;
+}
+
+// Device-related input types
+export interface CreateDeviceInput {
+  name: string;
+  description?: string;
+  version?: string;
+  category: 'microcontroller' | 'sensor';
+  user_id?: string;
+}
+
+export interface UpdateDeviceInput {
+  name?: string;
+  description?: string;
+  version?: string;
+  category?: 'microcontroller' | 'sensor';
 }
 
 // Plant response types
@@ -163,74 +203,16 @@ export interface PlantDeleteResponse {
   message: string;
 }
 
-export interface Device {
-  id: string;
-  name: string;
-  description?: string;
-  version?: string;
-  category: 'microcontroller' | 'sensor';
-  created_at: string;
-  updated_at: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  profile_photo_url?: string;
-  is_active: boolean;
-  roles: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-// GraphQL input types
-export interface CreatePlantInput {
-  name: string;
-  species: string;
-  description?: string;
-}
-
-export interface UpdatePlantInput {
-  name?: string;
-  species?: string;
-  description?: string;
-}
-
-export interface CreateDeviceInput {
-  name: string;
-  description?: string;
-  version?: string;
-  category: 'microcontroller' | 'sensor';
-}
-
-export interface UpdateDeviceInput {
-  name?: string;
-  description?: string;
-  version?: string;
-  category?: 'microcontroller' | 'sensor';
-}
-
-// GraphQL query response types
-export interface PlantsResponse {
-  plants: Plant[];
-}
-
-export interface PlantResponse {
-  plant: Plant;
-}
-
+// Device response types
 export interface DevicesResponse {
   devices: Device[];
 }
 
 export interface DeviceResponse {
-  device: Device;
+  device?: Device;
 }
 
-// Mutation response types
+// GraphQL Mutation response types
 export interface CreatePlantResponse {
   createPlant: Plant;
 }

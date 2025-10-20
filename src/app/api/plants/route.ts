@@ -1,52 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+
 export async function GET(request: NextRequest) {
   try {
-    // Try to get plants from API Gateway
-    try {
-      const apiGatewayUrl = process.env.API_GATEWAY_URL || 'http://api-gateway:8080';
-      const response = await fetch(`${apiGatewayUrl}/api/v1/plants`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    // Get auth token from request headers
+    const authHeader = request.headers.get('Authorization');
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
-      }
-    } catch (apiError) {
-      console.log('API Gateway not available for plants, using mock data');
+    // Construir la URL de destino en la API Gateway
+    const url = new URL(request.url);
+    const searchParams = url.searchParams.toString();
+    const targetUrl = new URL(`/api/v1/plants${searchParams ? `?${searchParams}` : ''}`, BASE_URL);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
     }
 
-    // Fallback to mock plants data
-    const mockPlants = [
-      {
-        id: '1',
-        name: 'Tomate Cherry',
-        species: 'Solanum lycopersicum',
-        description: 'Tomate cherry orgánico cultivado en invernadero',
-        user_id: '1',
-        photo_filename: 'tomate-cherry.jpg',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-      },
-      {
-        id: '2',
-        name: 'Lechuga Romana',
-        species: 'Lactuca sativa',
-        description: 'Lechuga romana fresca para ensaladas',
-        user_id: '1',
-        photo_filename: 'lechuga-romana.jpg',
-        created_at: '2024-01-20T14:15:00Z',
-        updated_at: '2024-01-20T14:15:00Z',
-      },
-    ];
+    // Hacer la petición a la API Gateway
+    const response = await fetch(targetUrl.toString(), {
+      method: 'GET',
+      headers,
+    });
 
-    return NextResponse.json(mockPlants);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return NextResponse.json(
+        { error: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Plants API error:', error);
+    console.error('Error proxying plants GET to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -58,36 +50,48 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Try to create plant through API Gateway
-    try {
-      const apiGatewayUrl = process.env.API_GATEWAY_URL || 'http://api-gateway:8080';
-      const response = await fetch(`${apiGatewayUrl}/api/v1/plants`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+    // Get auth token from request headers
+    const authHeader = request.headers.get('Authorization');
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
-      }
-    } catch (apiError) {
-      console.log('API Gateway not available for plant creation, using mock response');
+    console.log('🌱 POST /api/plants - Auth header:', authHeader ? 'YES' : 'NO');
+    console.log('🌱 POST /api/plants - Body:', body);
+
+    const targetUrl = new URL('/api/v1/plants', BASE_URL);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
     }
 
-    // Fallback to mock plant creation
-    const newPlant = {
-      id: Date.now().toString(),
-      ...body,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    console.log('🌱 Forwarding to API Gateway:', targetUrl.toString());
+    console.log('🌱 Headers:', headers);
 
-    return NextResponse.json(newPlant);
+    const response = await fetch(targetUrl.toString(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    console.log('🌱 API Gateway response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('🌱 API Gateway error:', errorText);
+      return NextResponse.json(
+        { error: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    console.log('🌱 Plant created successfully:', data);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Plant creation API error:', error);
+    console.error('Error proxying plant creation to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

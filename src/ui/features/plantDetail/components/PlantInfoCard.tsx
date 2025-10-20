@@ -5,11 +5,49 @@ import { motion } from 'framer-motion';
 import { Leaf, Calendar, Clock } from 'lucide-react';
 
 interface PlantInfoCardProps {
-  plant: any;
+  plant: {
+    name: string;
+    species: string;
+    description?: string;
+    created_at: string;
+  } | null;
   isClient: boolean;
 }
 
 const PlantInfoCard: React.FC<PlantInfoCardProps> = ({ plant, isClient }) => {
+  // Calcular la fecha de registro formateada
+  const registrationDate = plant?.created_at 
+    ? new Date(plant.created_at).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : 'No disponible';
+
+  // Calcular la edad en el sistema
+  const calculateAge = () => {
+    if (!plant?.created_at) return 'No disponible';
+    
+    const createdDate = new Date(plant.created_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Hoy';
+    if (diffDays === 1) return '1 día';
+    if (diffDays < 30) return `${diffDays} días`;
+    
+    const months = Math.floor(diffDays / 30);
+    const remainingDays = diffDays % 30;
+    
+    if (months === 1 && remainingDays === 0) return '1 mes';
+    if (remainingDays === 0) return `${months} meses`;
+    if (months === 1) return `1 mes y ${remainingDays} días`;
+    return `${months} meses y ${remainingDays} días`;
+  };
+
+  const age = isClient ? calculateAge() : 'Cargando...';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -45,7 +83,7 @@ const PlantInfoCard: React.FC<PlantInfoCardProps> = ({ plant, isClient }) => {
           <div>
             <p className="text-teal-300 text-sm">Fecha de registro</p>
             <p className="text-white font-semibold text-base">
-              No disponible
+              {registrationDate}
             </p>
           </div>
         </div>
@@ -58,7 +96,7 @@ const PlantInfoCard: React.FC<PlantInfoCardProps> = ({ plant, isClient }) => {
           <div>
             <p className="text-teal-300 text-sm">Edad en el sistema</p>
             <p className="text-white font-semibold text-base">
-              No disponible
+              {age}
             </p>
           </div>
         </div>

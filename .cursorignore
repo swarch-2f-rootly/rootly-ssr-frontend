@@ -1,0 +1,6 @@
+# Ignorar source maps y archivos legacy de dependencias
+**/src/legacy/**
+**/_next/src/**
+**/node_modules/**/.git
+**/node_modules/**/src/legacy/**
+

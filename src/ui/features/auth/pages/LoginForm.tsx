@@ -2,8 +2,8 @@
 
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,9 +14,20 @@ const LoginSchema = z.object({
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Check for registration success message
+  useEffect(() => {
+    if (searchParams.get('registered') === 'true') {
+      setSuccessMessage('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
+      // Clean URL
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [searchParams]);
   const form = useForm({
     defaultValues: { email: "", password: "" },
     validators: {
@@ -53,6 +64,12 @@ export default function LoginForm() {
             <h1 className="text-3xl font-bold text-emerald-600 mb-2">Bienvenido</h1>
             <p className="text-gray-600">Inicia sesión en tu cuenta ROOTLY</p>
           </div>
+          
+          {successMessage && (
+            <div className="text-green-600 text-sm mb-4 text-center bg-green-50 p-3 rounded-lg border border-green-200">
+              {successMessage}
+            </div>
+          )}
           
           {error && <div className="text-red-600 text-sm mb-4 text-center bg-red-50 p-3 rounded-lg">{error}</div>}
           

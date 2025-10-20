@@ -44,14 +44,14 @@ export const plantsKeys = {
  * Get all plants for a specific user
  */
 const getUserPlants = async (userId: string): Promise<Plant[]> => {
-  return plantsClient.get<Plant[]>(`/api/v1/plants/users/${userId}`);
+  return plantsClient.get<Plant[]>(`/api/plants/users/${userId}`);
 };
 
 /**
  * Get a specific plant by ID
  */
 const getPlant = async (plantId: string): Promise<Plant> => {
-  return plantsClient.get<Plant>(`/api/v1/plants/${plantId}`);
+  return plantsClient.get<Plant>(`/api/plants/${plantId}`);
 };
 
 /**
@@ -61,7 +61,7 @@ const createPlant = async (plantData: CreatePlantInput): Promise<Plant> => {
   console.log('🌱 Creating plant - Input data:', plantData);
   
   try {
-    const response = await plantsClient.post<Plant>('/api/v1/plants/', plantData);
+    const response = await plantsClient.post<Plant>('/api/plants', plantData);
     console.log('🌱 Plant created successfully:', response);
     return response;
   } catch (error) {
@@ -80,14 +80,14 @@ const updatePlant = async ({
   plantId: string;
   plantData: UpdatePlantInput;
 }): Promise<Plant> => {
-  return plantsClient.put<Plant>(`/api/v1/plants/${plantId}`, plantData);
+  return plantsClient.put<Plant>(`/api/plants/${plantId}`, plantData);
 };
 
 /**
  * Delete a plant
  */
 const deletePlant = async (plantId: string): Promise<void> => {
-  await plantsClient.delete(`/api/v1/plants/${plantId}`);
+  await plantsClient.delete(`/api/plants/${plantId}`);
 };
 
 // Query Hooks
@@ -124,7 +124,7 @@ export const useCreatePlant = () => {
 
   return useMutation({
     mutationFn: createPlant,
-    onMutate: async (newPlantData) => {
+    onMutate: async (newPlantData: CreatePlantInput) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ 
         predicate: q => q.queryKey[0] === 'plants' 

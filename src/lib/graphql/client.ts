@@ -3,27 +3,32 @@ import { GraphQLClient } from 'graphql-request';
 // Helper function to get auth token
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth_token') || null;
+  return localStorage.getItem('access_token') || null;
 }
 
 // Helper function to set auth token
 export function setAuthToken(token: string): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('access_token', token);
   }
 }
 
 // Helper function to remove auth token
 export function removeAuthToken(): void {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('access_token');
   }
 }
+
+// Query keys for GraphQL
+export const graphqlKeys = {
+  all: ['graphql'] as const,
+};
 
 // Usar el proxy interno de Next.js en lugar del API Gateway directo
 const GRAPHQL_ENDPOINT = '/api/graphql';
 
-interface GraphQLQueryOptions<TData = unknown, TVariables = unknown> extends Omit<UseQueryOptions<TData, Error, TData, any[]>, 'queryFn' | 'queryKey'> {
+interface GraphQLQueryOptions<TData = unknown, TVariables = unknown> extends Omit<UseQueryOptions<TData, Error, TData, (string | Record<string, unknown>)[]>, 'queryFn' | 'queryKey'> {
   variables?: TVariables;
 }
 
@@ -69,7 +74,7 @@ export function useGraphQLQuery<TData = unknown, TVariables = unknown>(
       const result = await response.json();
 
       if (result.errors) {
-        throw new Error(`GraphQL errors: ${result.errors.map((e: any) => e.message).join(', ')}`);
+        throw new Error(`GraphQL errors: ${result.errors.map((e: { message: string }) => e.message).join(', ')}`);
       }
 
       return result.data;

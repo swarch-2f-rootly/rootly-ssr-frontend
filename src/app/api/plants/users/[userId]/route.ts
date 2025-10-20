@@ -2,54 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
-    // Try to get user plants from API Gateway
-    try {
-      const apiGatewayUrl = process.env.API_GATEWAY_URL || 'http://api-gateway:8080';
-      const response = await fetch(`${apiGatewayUrl}/api/v1/plants/users/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    // Get auth token from request headers
+    const authHeader = request.headers.get('Authorization');
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
-      }
-    } catch (apiError) {
-      console.log('API Gateway not available for user plants, using mock data');
+    const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
     }
 
-    // Fallback to mock user plants data
-    const mockUserPlants = [
-      {
-        id: '1',
-        name: 'Tomate Cherry',
-        species: 'Solanum lycopersicum',
-        description: 'Tomate cherry orgánico cultivado en invernadero',
-        user_id: userId,
-        photo_filename: 'tomate-cherry.jpg',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-      },
-      {
-        id: '2',
-        name: 'Lechuga Romana',
-        species: 'Lactuca sativa',
-        description: 'Lechuga romana fresca para ensaladas',
-        user_id: userId,
-        photo_filename: 'lechuga-romana.jpg',
-        created_at: '2024-01-20T14:15:00Z',
-        updated_at: '2024-01-20T14:15:00Z',
-      },
-    ];
+    const response = await fetch(`${BASE_URL}/api/v1/plants/users/${userId}`, {
+      method: 'GET',
+      headers,
+    });
 
-    return NextResponse.json(mockUserPlants);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('API Gateway error for user plants:', response.status, errorText);
+      return NextResponse.json(
+        { error: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('User plants API error:', error);
     return NextResponse.json(

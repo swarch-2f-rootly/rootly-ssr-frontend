@@ -1,12 +1,13 @@
 // Centralized API configuration (similar to original frontend)
+// Use Next.js API routes as proxy to avoid CORS issues
 export const API_CONFIG = {
-  // API Gateway URL - single point of entry
-  GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',
+  // API Gateway URL - use Next.js API routes as proxy
+  GATEWAY_URL: '',  // Empty string for relative URLs
   
-  // All services go through API Gateway
-  AUTH_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',
-  PLANTS_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',
-  ANALYTICS_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',
+  // All services go through Next.js API routes
+  AUTH_URL: '',  // Empty string for relative URLs
+  PLANTS_URL: '',  // Empty string for relative URLs
+  ANALYTICS_URL: '',  // Empty string for relative URLs
 } as const;
 
 // Helper function to get the appropriate API URL

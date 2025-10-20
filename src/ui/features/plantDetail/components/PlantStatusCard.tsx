@@ -3,12 +3,23 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, Activity, Pause } from 'lucide-react';
+import { AuthenticatedImage } from '@/ui/components/AuthenticatedImage';
 
 interface PlantStatusCardProps {
-  plant: any;
+  plant: {
+    id: string;
+    name: string;
+    photo_filename?: string;
+  } | null;
   isMonitoring: boolean;
   hasMicrocontroller: boolean;
-  currentData: any;
+  currentData: {
+    sensorId: string;
+    temperature: number;
+    airHumidity: number;
+    soilHumidity: number;
+    lightLevel: number;
+  };
   isClient: boolean;
   onToggleMonitoring: () => void;
 }
@@ -41,17 +52,20 @@ const PlantStatusCard: React.FC<PlantStatusCardProps> = ({
             className="relative"
           >
             <div className="w-32 h-32 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center shadow-2xl organic-shape overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
-                alt={plant.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (target.src !== 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80') {
-                    target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80';
-                  }
-                }}
-              />
+              {plant.photo_filename ? (
+                <AuthenticatedImage
+                  src={`/api/plants/${plant.id}/photo`}
+                  alt={plant.name}
+                  className="w-full h-full object-cover"
+                  fallbackSrc="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                />
+              ) : (
+                <img
+                  src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                  alt={plant.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
             {isMonitoring && (
               <motion.div

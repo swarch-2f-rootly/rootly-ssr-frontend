@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GraphQLClient } from 'graphql-request';
+import axios from 'axios';
 
-// Configuración del cliente GraphQL para el API Gateway
-const gatewayClient = new GraphQLClient(
-  process.env.API_GATEWAY_URL + '/graphql',
-  {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+// Función para obtener la URL del servicio de Analytics directamente
+// Nota: Estamos conectando directamente al servicio de analytics para evitar
+// problemas con el proxy reverso del API Gateway en Go con respuestas grandes
+function getAnalyticsServiceUrl(): string {
+  // En Docker: usar el nombre del servicio
+  if (process.env.NODE_ENV === 'production') {
+    return 'http://be-analytics:8000';
   }
-);
+  
+  // En desarrollo local: usar el puerto expuesto
+  return 'http://localhost:8000';
+}
 
 // Middleware para manejar CORS y headers
 function setCorsHeaders(response: NextResponse) {
@@ -29,73 +32,107 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, variables, operationName } = body;
 
-    // Validación básica
-    if (!query) {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
-    }
-
-    // Headers de autenticación (si existen)
-    const authHeader = request.headers.get('authorization');
-    const headers: Record<string, string> = {};
+    // Headers de autenticación
+    const authHeader = request.headers.get('Authorization');
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
     
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
 
-    // Ejecutar query en el API Gateway
-    const result = await gatewayClient.request(
-      query,
-      variables,
-      { ...headers }
-    );
+    const analyticsUrl = getAnalyticsServiceUrl();
+    const targetUrl = `${analyticsUrl}/api/v1/graphql`;
 
-    const response = NextResponse.json(result);
-    return setCorsHeaders(response);
+    // Usar axios para manejar mejor la conexión y respuesta
+    const response = await axios.post(targetUrl, body, {
+      headers,
+      timeout: 30000, // 30 segundos
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      validateStatus: () => true, // No lanzar error en ningún status code
+      decompress: false, // Deshabilitar descompresión automática
+      transitional: {
+        silentJSONParsing: false,
+        forcedJSONParsing: true,
+        clarifyTimeoutError: false,
+      },
+      // Deshabilitar HTTP agent pooling para evitar problemas de conexión
+      httpAgent: new (await import('http')).Agent({
+        keepAlive: false,
+      }),
+    });
+
+    // Devolver la respuesta tal como viene del servicio de analytics
+    const nextResponse = NextResponse.json(response.data, { 
+      status: response.status 
+    });
+    
+    return setCorsHeaders(nextResponse);
 
   } catch (error) {
     console.error('GraphQL Proxy Error:', error);
     
-    // Manejo de errores específicos
-    if (error instanceof Error) {
+    if (axios.isAxiosError(error)) {
       return NextResponse.json(
         { 
-          error: 'GraphQL Error',
+          error: 'GraphQL request failed',
           message: error.message,
-          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+          code: error.code
         },
-        { status: 500 }
+        { status: 502 }
       );
     }
-
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown';
+    
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { 
+        error: 'Internal Server Error', 
+        message: errorMessage,
+      },
       { status: 500 }
     );
   }
 }
 
 
-// Handler para GET (GraphQL Playground o queries simples)
+// Handler para GET (GraphQL Playground)
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
-  
-  if (!query) {
-    return NextResponse.json(
-      { error: 'Query parameter is required for GET requests' },
-      { status: 400 }
-    );
-  }
-
   try {
-    const result = await gatewayClient.request(query);
-    const response = NextResponse.json(result);
-    return setCorsHeaders(response);
+    const authHeader = request.headers.get('Authorization');
+    
+    const headers: Record<string, string> = {
+      'Accept': 'text/html,application/json',
+    };
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    const analyticsUrl = getAnalyticsServiceUrl();
+    const targetUrl = `${analyticsUrl}/api/v1/graphql`;
+
+    const response = await axios.get(targetUrl, {
+      headers,
+      timeout: 30000,
+      validateStatus: () => true,
+    });
+
+    const contentType = response.headers['content-type'];
+    
+    if (contentType?.includes('text/html')) {
+      return new NextResponse(response.data, {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+
+    const nextResponse = NextResponse.json(response.data);
+    return setCorsHeaders(nextResponse);
   } catch (error) {
     console.error('GraphQL GET Error:', error);
     return NextResponse.json(

@@ -50,8 +50,8 @@ export function useAuth(): AuthState {
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      // Call API Gateway directly to avoid any proxy/mocking
-      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+      // Use Next.js API route as proxy to avoid CORS issues
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ export function useAuth(): AuthState {
       setUser(gatewayUser);
       localStorage.setItem('user', JSON.stringify(gatewayUser));
       if (accessToken) {
-        localStorage.setItem('auth_token', accessToken);
+        localStorage.setItem('access_token', accessToken);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -83,7 +83,7 @@ export function useAuth(): AuthState {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('access_token');
   };
 
   return {

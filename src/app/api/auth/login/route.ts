@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Try to authenticate through API Gateway first
     try {
-      const apiGatewayUrl = process.env.API_GATEWAY_URL || 'http://api-gateway:8080';
+      const apiGatewayUrl = getApiGatewayUrl();
       console.log('🔐 Attempting login via API Gateway:', `${apiGatewayUrl}/api/v1/auth/login`);
       
       const response = await fetch(`${apiGatewayUrl}/api/v1/auth/login`, {
