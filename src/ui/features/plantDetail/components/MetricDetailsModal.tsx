@@ -244,3 +244,4 @@ const MetricDetailsModal: React.FC<MetricDetailsModalProps> = ({
 
 export default MetricDetailsModal;
 
+

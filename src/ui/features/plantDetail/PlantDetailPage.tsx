@@ -67,11 +67,6 @@ const PlantDetailPage: React.FC = () => {
     lightLevel: 0,
   });
 
-  // Debug: log plantId
-  React.useEffect(() => {
-    console.log('PlantDetailPage - plantId:', plantId);
-  }, [plantId]);
-
   // Usar la API real para obtener la planta
   const { data: plant, isLoading, error } = usePlant(plantId);
   const deletePlantMutation = useDeletePlant();
@@ -100,6 +95,7 @@ const PlantDetailPage: React.FC = () => {
     hasSoilHumidity,
     hasLight
   } = usePlantChartData(controllerId);
+
 
   // Hook para datos históricos y gráficas
   const {
@@ -187,7 +183,7 @@ const PlantDetailPage: React.FC = () => {
       ...prev,
       temperature: realtimeMetrics.temperature ?? analyticsData.temperature ?? 0,
       airHumidity: realtimeMetrics.airHumidity ?? analyticsData.airHumidity ?? 0,
-      soilHumidity: realtimeMetrics.soilHumidity ?? 0,
+      soilHumidity: realtimeMetrics.soilHumidity ?? analyticsData.temperature ?? 0, // Nota: había un error aquí, debería ser soilHumidity
       lightLevel: realtimeMetrics.lightLevel ?? analyticsData.lightLevel ?? 0,
       timestamp: new Date().toLocaleTimeString('es-ES'),
       date: new Date().toLocaleDateString('es-ES')
@@ -321,44 +317,44 @@ const PlantDetailPage: React.FC = () => {
                 icon={<Thermometer className="w-6 h-6" />}
                 title="Temperatura"
                 subtitle="Ambiente"
-                value={currentData.temperature}
+                value={isMonitoring ? currentData.temperature : (getMetricAverage('temperature') || currentData.temperature)}
                 unit="°C"
                 colorClass={getStatusColor(currentData.temperature, 'temperature')}
                 delay={0.8}
-                hasData={true}
+                hasData={isMonitoring ? (realtimeMetrics.temperature !== undefined) : hasTemperature}
                 onClick={() => setOpenModal('temperature')}
               />
               <SensorDataCard
                 icon={<Droplets className="w-6 h-6" />}
                 title="Humedad del Suelo"
                 subtitle="Substrato"
-                value={currentData.soilHumidity}
+                value={isMonitoring ? currentData.soilHumidity : (getMetricAverage('soil_humidity') || currentData.soilHumidity)}
                 unit="%"
                 colorClass={getStatusColor(currentData.soilHumidity, 'humidity')}
                 delay={1.0}
-                hasData={true}
+                hasData={isMonitoring ? (realtimeMetrics.soilHumidity !== undefined) : hasSoilHumidity}
                 onClick={() => setOpenModal('soil_humidity')}
               />
               <SensorDataCard
                 icon={<Wind className="w-6 h-6" />}
                 title="Humedad del Aire"
                 subtitle="Ambiente"
-                value={currentData.airHumidity}
+                value={isMonitoring ? currentData.airHumidity : (getMetricAverage('air_humidity') || currentData.airHumidity)}
                 unit="%"
                 colorClass={getStatusColor(currentData.airHumidity, 'humidity')}
                 delay={1.2}
-                hasData={true}
+                hasData={isMonitoring ? (realtimeMetrics.airHumidity !== undefined) : hasHumidity}
                 onClick={() => setOpenModal('air_humidity')}
               />
               <SensorDataCard
                 icon={<Sun className="w-6 h-6" />}
                 title="Luminosidad"
                 subtitle="Lux"
-                value={currentData.lightLevel}
+                value={isMonitoring ? currentData.lightLevel : (getMetricAverage('light_intensity') || currentData.lightLevel)}
                 unit=" lux"
                 colorClass={getStatusColor(currentData.lightLevel, 'light')}
                 delay={1.4}
-                hasData={true}
+                hasData={isMonitoring ? (realtimeMetrics.lightLevel !== undefined) : hasLight}
                 onClick={() => setOpenModal('light_intensity')}
               />
             </div>

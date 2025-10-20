@@ -17,7 +17,9 @@ export function usePlantChartData(controllerId: string) {
   const shouldExecuteQuery = !!controllerId && controllerId.length > 0;
 
   const { data: multiMetricData, isLoading, error } = useMultiMetricReport(multiMetricInput, {
-    enabled: shouldExecuteQuery
+    enabled: shouldExecuteQuery,
+    staleTime: 5 * 60 * 1000, // 5 minutos - no refetch tan seguido
+    gcTime: 10 * 60 * 1000,   // 10 minutos en caché
   });
 
   // Transformar los datos al formato esperado por PlantCharts
@@ -169,4 +171,5 @@ export function usePlantMetricTrend(
     error,
   };
 }
+
 

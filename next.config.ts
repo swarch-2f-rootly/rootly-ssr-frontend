@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
     // Disable TypeScript type checking during builds
     ignoreBuildErrors: true,
   },
+  // Suprimir errores 404 de source maps en desarrollo
+  webpack: (config, { dev, isServer }) => {
+    if (dev) {
+      // Ignorar source maps de node_modules
+      config.ignoreWarnings = [
+        { module: /node_modules/ },
+      ];
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
