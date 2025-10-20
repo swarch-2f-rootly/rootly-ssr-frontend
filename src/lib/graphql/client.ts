@@ -28,7 +28,7 @@ export const graphqlKeys = {
 // Usar el proxy interno de Next.js en lugar del API Gateway directo
 const GRAPHQL_ENDPOINT = '/api/graphql';
 
-interface GraphQLQueryOptions<TData = unknown, TVariables = unknown> extends Omit<UseQueryOptions<TData, Error, TData, any[]>, 'queryFn' | 'queryKey'> {
+interface GraphQLQueryOptions<TData = unknown, TVariables = unknown> extends Omit<UseQueryOptions<TData, Error, TData, (string | Record<string, unknown>)[]>, 'queryFn' | 'queryKey'> {
   variables?: TVariables;
 }
 
@@ -74,7 +74,7 @@ export function useGraphQLQuery<TData = unknown, TVariables = unknown>(
       const result = await response.json();
 
       if (result.errors) {
-        throw new Error(`GraphQL errors: ${result.errors.map((e: any) => e.message).join(', ')}`);
+        throw new Error(`GraphQL errors: ${result.errors.map((e: { message: string }) => e.message).join(', ')}`);
       }
 
       return result.data;

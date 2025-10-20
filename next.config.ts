@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Suprimir errores 404 de source maps en desarrollo
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev }) => {
     if (dev) {
       // Ignorar source maps de node_modules
       config.ignoreWarnings = [

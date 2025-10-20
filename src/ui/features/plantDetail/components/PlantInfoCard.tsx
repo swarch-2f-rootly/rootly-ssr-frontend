@@ -5,7 +5,12 @@ import { motion } from 'framer-motion';
 import { Leaf, Calendar, Clock } from 'lucide-react';
 
 interface PlantInfoCardProps {
-  plant: any;
+  plant: {
+    name: string;
+    species: string;
+    description?: string;
+    created_at: string;
+  } | null;
   isClient: boolean;
 }
 

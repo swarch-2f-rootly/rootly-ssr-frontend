@@ -39,7 +39,7 @@ export class RestApiClient {
     return response.json();
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -60,7 +60,7 @@ export class RestApiClient {
     return text ? JSON.parse(text) : undefined as T;
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -88,11 +88,15 @@ export class RestApiClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      const error = new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(`HTTP error! status: ${response.status}`) as Error & {
+        status: number;
+        statusText: string;
+        responseText: string;
+      };
       // Attach additional info for better error handling
-      (error as any).status = response.status;
-      (error as any).statusText = response.statusText;
-      (error as any).responseText = errorText;
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.responseText = errorText;
       
       // Don't log 404 errors as they're expected (e.g., already deleted resources)
       if (response.status !== 404) {

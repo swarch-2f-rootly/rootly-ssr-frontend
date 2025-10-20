@@ -6,10 +6,20 @@ import { Cpu, Activity, Pause } from 'lucide-react';
 import { AuthenticatedImage } from '@/ui/components/AuthenticatedImage';
 
 interface PlantStatusCardProps {
-  plant: any;
+  plant: {
+    id: string;
+    name: string;
+    photo_filename?: string;
+  } | null;
   isMonitoring: boolean;
   hasMicrocontroller: boolean;
-  currentData: any;
+  currentData: {
+    sensorId: string;
+    temperature: number;
+    airHumidity: number;
+    soilHumidity: number;
+    lightLevel: number;
+  };
   isClient: boolean;
   onToggleMonitoring: () => void;
 }

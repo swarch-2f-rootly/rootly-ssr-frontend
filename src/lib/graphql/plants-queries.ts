@@ -1,14 +1,4 @@
 import { gql } from 'graphql-tag';
-import type { 
-  Plant, 
-  CreatePlantInput, 
-  UpdatePlantInput, 
-  PlantFilterInput,
-  PlantsResponse,
-  PlantResponse,
-  PlantMutationResponse,
-  PlantDeleteResponse
-} from './types';
 
 // GraphQL Queries para Plantas
 export const GET_PLANTS = gql`

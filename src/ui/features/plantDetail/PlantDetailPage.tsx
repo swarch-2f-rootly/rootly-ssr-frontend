@@ -35,22 +35,10 @@ interface PlantData {
   sensorId: string;
 }
 
-// Mock data para la planta
-const mockPlant = {
-  id: "1",
-  name: "Tomate Chonto",
-  species: "Solanum lycopersicum",
-  description: "Tomate chonto de excelente calidad",
-  photo_filename: "tomate_chonto.jpg",
-  created_at: "2024-01-15T10:30:00Z",
-  location: "Invernadero A"
-};
-
 const PlantDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const plantId = params.plantId as string;
-  const { user } = useAuth();
   
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -87,7 +75,6 @@ const PlantDetailPage: React.FC = () => {
     currentData: analyticsData, 
     isLoading: analyticsLoading, 
     error: analyticsError, 
-    hasData: hasAnalyticsData,
     allMetrics,
     getMetricAverage,
     hasTemperature,
@@ -110,8 +97,6 @@ const PlantDetailPage: React.FC = () => {
   // Hook para monitoreo en tiempo real
   const { 
     data: latestMeasurementData, 
-    isLoading: isLoadingLatest,
-    error: latestError 
   } = useLatestMeasurement(
     controllerId,
     isMonitoring && !!controllerId,
@@ -398,7 +383,7 @@ const PlantDetailPage: React.FC = () => {
           >
             <h3 className="text-xl font-bold text-slate-800 mb-4">Eliminar Planta</h3>
             <p className="text-slate-600 mb-6">
-              ¿Estás seguro de que quieres eliminar la planta "{plant?.name}"? Esta acción no se puede deshacer y eliminará todos los datos asociados.
+              ¿Estás seguro de que quieres eliminar la planta &quot;{plant?.name}&quot;? Esta acción no se puede deshacer y eliminará todos los datos asociados.
             </p>
             <div className="flex gap-3">
               <button
@@ -426,7 +411,7 @@ const PlantDetailPage: React.FC = () => {
         isOpen={openModal === 'temperature'}
         onClose={() => setOpenModal(null)}
         metricType="temperature"
-        metrics={allMetrics as any}
+        metrics={allMetrics}
         title="Temperatura"
         icon={<Thermometer className="w-8 h-8" />}
       />
@@ -435,7 +420,7 @@ const PlantDetailPage: React.FC = () => {
         isOpen={openModal === 'air_humidity'}
         onClose={() => setOpenModal(null)}
         metricType="air_humidity"
-        metrics={allMetrics as any}
+        metrics={allMetrics}
         title="Humedad del Aire"
         icon={<Wind className="w-8 h-8" />}
       />
@@ -444,7 +429,7 @@ const PlantDetailPage: React.FC = () => {
         isOpen={openModal === 'soil_humidity'}
         onClose={() => setOpenModal(null)}
         metricType="soil_humidity"
-        metrics={allMetrics as any}
+        metrics={allMetrics}
         title="Humedad del Suelo"
         icon={<Droplets className="w-8 h-8" />}
       />
@@ -453,7 +438,7 @@ const PlantDetailPage: React.FC = () => {
         isOpen={openModal === 'light_intensity'}
         onClose={() => setOpenModal(null)}
         metricType="light_intensity"
-        metrics={allMetrics as any}
+        metrics={allMetrics}
         title="Luminosidad"
         icon={<Sun className="w-8 h-8" />}
       />
