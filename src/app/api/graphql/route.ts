@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GraphQLClient } from 'graphql-request';
 
-// Configuración del cliente GraphQL para el API Gateway
-const gatewayClient = new GraphQLClient(
-  process.env.API_GATEWAY_URL + '/graphql',
-  {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }
-);
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
 
 // Middleware para manejar CORS y headers
 function setCorsHeaders(response: NextResponse) {
@@ -29,73 +20,82 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, variables, operationName } = body;
 
-    // Validación básica
-    if (!query) {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
-    }
-
-    // Headers de autenticación (si existen)
-    const authHeader = request.headers.get('authorization');
-    const headers: Record<string, string> = {};
+    // Headers de autenticación
+    const authHeader = request.headers.get('Authorization');
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
     
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
 
-    // Ejecutar query en el API Gateway
-    const result = await gatewayClient.request(
-      query,
-      variables,
-      { ...headers }
-    );
+    const targetUrl = new URL('/api/v1/graphql', BASE_URL);
 
-    const response = NextResponse.json(result);
-    return setCorsHeaders(response);
+    const response = await fetch(targetUrl.toString(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return NextResponse.json(
+        { error: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    const nextResponse = NextResponse.json(data);
+    return setCorsHeaders(nextResponse);
 
   } catch (error) {
     console.error('GraphQL Proxy Error:', error);
     
-    // Manejo de errores específicos
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { 
-          error: 'GraphQL Error',
-          message: error.message,
-          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal Server Error', message: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
 
-// Handler para GET (GraphQL Playground o queries simples)
+// Handler para GET (GraphQL Playground)
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
-  
-  if (!query) {
-    return NextResponse.json(
-      { error: 'Query parameter is required for GET requests' },
-      { status: 400 }
-    );
-  }
-
   try {
-    const result = await gatewayClient.request(query);
-    const response = NextResponse.json(result);
-    return setCorsHeaders(response);
+    const authHeader = request.headers.get('Authorization');
+    
+    const headers: Record<string, string> = {
+      'Accept': 'text/html,application/json',
+    };
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    const targetUrl = new URL('/api/v1/graphql', BASE_URL);
+
+    const response = await fetch(targetUrl.toString(), {
+      method: 'GET',
+      headers,
+    });
+
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType?.includes('text/html')) {
+      const html = await response.text();
+      return new NextResponse(html, {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+
+    const data = await response.json();
+    const nextResponse = NextResponse.json(data);
+    return setCorsHeaders(nextResponse);
   } catch (error) {
     console.error('GraphQL GET Error:', error);
     return NextResponse.json(

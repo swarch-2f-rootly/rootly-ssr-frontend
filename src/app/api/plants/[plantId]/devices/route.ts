@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ plantId: string }> }
 ) {
   try {
-    const { userId } = await params;
+    const { plantId } = await params;
 
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
-    
+    const targetUrl = new URL(`/api/v1/plants/${plantId}/devices`, BASE_URL);
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -21,14 +23,13 @@ export async function GET(
       headers['Authorization'] = authHeader;
     }
 
-    const response = await fetch(`${BASE_URL}/api/v1/plants/users/${userId}`, {
+    const response = await fetch(targetUrl.toString(), {
       method: 'GET',
       headers,
     });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('API Gateway error for user plants:', response.status, errorText);
       return NextResponse.json(
         { error: errorText },
         { status: response.status }
@@ -38,10 +39,11 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('User plants API error:', error);
+    console.error('Error proxying plant devices GET to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+

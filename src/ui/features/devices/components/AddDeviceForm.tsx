@@ -13,12 +13,18 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import { useCreateDevice } from '@/lib/api/devices-api';
+import { useAuth } from '@/hooks/useAuth';
 
 type DeviceCategory = 'microcontroller' | 'sensor';
 
 const AddDeviceForm: React.FC = () => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  
+  // Usar el hook de mutación real
+  const createDevice = useCreateDevice();
 
   const form = useForm({
     defaultValues: {
@@ -30,10 +36,19 @@ const AddDeviceForm: React.FC = () => {
     onSubmit: async ({ value }) => {
       try {
         setIsSubmitting(true);
-        console.log('Submitting device data:', value);
+        console.log('📝 Device form onSubmit triggered');
+        console.log('📝 Device form values before submit:', value);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Agregar user_id del usuario autenticado
+        const deviceData = {
+          ...value,
+          user_id: user?.id || '',
+        };
+        
+        console.log('Submitting device data with user_id:', deviceData);
+        
+        // Enviar a la API real
+        await createDevice.mutateAsync(deviceData);
         
         console.log('Device created successfully');
         router.push('/devices?created=true');
@@ -107,8 +122,6 @@ const AddDeviceForm: React.FC = () => {
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('📝 Device form onSubmit triggered');
-              console.log('📝 Device form values before submit:', form.state.values);
               form.handleSubmit();
             }}
             className="space-y-6"

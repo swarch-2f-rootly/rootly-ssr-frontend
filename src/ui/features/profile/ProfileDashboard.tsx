@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Edit, Camera, Upload, X, AlertCircle } from 'lucide-react';
+import { User, Mail, Edit, Camera, Upload, X, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUpdateUser, useUploadUserPhoto, useDeleteUserPhoto } from '@/lib/api/users-api';
+import { useUserPlants } from '@/lib/api/plants-api';
+import { AuthenticatedImage } from '@/ui/components/AuthenticatedImage';
 
 const ProfileDashboard: React.FC = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -16,16 +19,35 @@ const ProfileDashboard: React.FC = () => {
   });
 
   const { user, isLoading: userLoading } = useAuth();
+  const updateUser = useUpdateUser();
+  const uploadPhoto = useUploadUserPhoto();
+  const deletePhoto = useDeleteUserPhoto();
+  const { data: plants = [] } = useUserPlants(user?.id || '');
+  
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // Load form data when user data is available
   useEffect(() => {
     if (user) {
       setEditFormData({
-        first_name: user.first_name,
-        last_name: user.last_name,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
       });
     }
   }, [user]);
+
+  // Auto-hide notification after 5 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -40,25 +62,83 @@ const ProfileDashboard: React.FC = () => {
   };
 
   const handleUploadPhoto = async () => {
-    if (selectedFile) {
+    if (selectedFile && user) {
       try {
-        // Simulate upload
-        console.log('Uploading photo:', selectedFile.name);
+        await uploadPhoto.mutateAsync({
+          userId: user.id,
+          file: selectedFile,
+        });
+        
+        // Update user in localStorage with new photo
+        const updatedUser = {
+          ...user,
+          profile_photo_url: `/api/users/${user.id}/photo?t=${Date.now()}`,
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        setNotification({
+          type: 'success',
+          message: 'Foto de perfil actualizada exitosamente',
+        });
+        
         setShowPhotoModal(false);
         setSelectedFile(null);
         setPhotoPreview(null);
+        
+        // Force page reload to update the photo
+        window.location.reload();
       } catch (error) {
         console.error('Error uploading photo:', error);
+        setNotification({
+          type: 'error',
+          message: 'Error al subir la foto de perfil',
+        });
       }
     }
   };
 
   const handleDeletePhoto = async () => {
+    if (!user) return;
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar tu foto de perfil?')) {
+      return;
+    }
+    
     try {
-      // Simulate delete
-      console.log('Deleting photo');
-    } catch (error) {
-      console.error('Error deleting photo:', error);
+      await deletePhoto.mutateAsync(user.id);
+      
+      // Update user in localStorage without photo
+      const updatedUser = {
+        ...user,
+        profile_photo_url: undefined,
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      setNotification({
+        type: 'success',
+        message: 'Foto de perfil eliminada exitosamente',
+      });
+      
+      setShowPhotoModal(false);
+      
+      // Force page reload to update the photo
+      window.location.reload();
+    } catch (error: any) {
+      const is404 = error?.status === 404 || (error instanceof Error && error.message.includes('404'));
+      
+      if (is404) {
+        setNotification({
+          type: 'success',
+          message: 'La foto de perfil ya fue eliminada',
+        });
+        setShowPhotoModal(false);
+      } else {
+        console.error('Error deleting photo:', error);
+        setNotification({
+          type: 'error',
+          message: 'Error al eliminar la foto de perfil',
+        });
+      }
     }
   };
 
@@ -80,12 +160,36 @@ const ProfileDashboard: React.FC = () => {
   };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
+    
     try {
-      // Simulate save
-      console.log('Saving profile:', editFormData);
+      await updateUser.mutateAsync({
+        userId: user.id,
+        userData: editFormData,
+      });
+      
+      // Update user in localStorage
+      const updatedUser = {
+        ...user,
+        ...editFormData,
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      setNotification({
+        type: 'success',
+        message: 'Perfil actualizado exitosamente',
+      });
+      
       setShowEditModal(false);
+      
+      // Force page reload to update the profile
+      window.location.reload();
     } catch (error) {
       console.error('Error updating profile:', error);
+      setNotification({
+        type: 'error',
+        message: 'Error al actualizar el perfil',
+      });
     }
   };
 
@@ -124,15 +228,23 @@ const ProfileDashboard: React.FC = () => {
           <div className="flex flex-col items-center text-center space-y-6">
             {/* Avatar Section */}
             <div className="relative">
-              <div className="h-32 w-32 border-4 border-emerald-200 rounded-full shadow-lg overflow-hidden bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                {user.profile_photo_url ? (
-                  <img
-                    src={user.profile_photo_url}
-                    alt="Foto de perfil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-16 w-16 text-white" />
+              <div className="h-32 w-32 border-4 border-emerald-200 rounded-full shadow-lg overflow-hidden bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center relative">
+                {/* Default user icon - always present as background */}
+                <User className="h-16 w-16 text-white absolute z-0" />
+                
+                {/* Photo overlay - will appear on top if photo exists */}
+                {user.profile_photo_url && (
+                  <div className="absolute inset-0 z-10">
+                    <AuthenticatedImage
+                      src={`/api/users/${user.id}/photo`}
+                      alt="Foto de perfil"
+                      className="w-full h-full object-cover rounded-full"
+                      fallbackSrc=""
+                      onError={() => {
+                        // Silently handle no photo - will show default icon underneath
+                      }}
+                    />
+                  </div>
                 )}
               </div>
               <button
@@ -207,7 +319,7 @@ const ProfileDashboard: React.FC = () => {
             {/* Stats Row */}
             <div className="flex items-center justify-center gap-8 pt-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-emerald-600">0</div>
+                <div className="text-3xl font-bold text-emerald-600">{plants.length}</div>
                 <div className="text-sm text-slate-500">Plantas</div>
               </div>
               <div className="w-px h-12 bg-slate-200"></div>
@@ -279,17 +391,28 @@ const ProfileDashboard: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleUploadPhoto}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium"
+                        disabled={uploadPhoto.isPending}
+                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Upload className="w-4 h-4" />
-                        Subir foto
+                        {uploadPhoto.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Subiendo...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Subir foto
+                          </>
+                        )}
                       </motion.button>
                       <button
                         onClick={() => {
                           setSelectedFile(null);
                           setPhotoPreview(null);
                         }}
-                        className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium"
+                        disabled={uploadPhoto.isPending}
+                        className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancelar
                       </button>
@@ -320,10 +443,20 @@ const ProfileDashboard: React.FC = () => {
                     {user.profile_photo_url && (
                       <button
                         onClick={handleDeletePhoto}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium"
+                        disabled={deletePhoto.isPending}
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <X className="w-4 h-4" />
-                        Eliminar foto actual
+                        {deletePhoto.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Eliminando...
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-4 h-4" />
+                            Eliminar foto actual
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
@@ -390,17 +523,28 @@ const ProfileDashboard: React.FC = () => {
               <div className="flex gap-3 mt-6">
                 <motion.button
                   onClick={handleSaveProfile}
+                  disabled={updateUser.isPending}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Edit className="w-4 h-4" />
-                  Guardar cambios
+                  {updateUser.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4" />
+                      Guardar cambios
+                    </>
+                  )}
                 </motion.button>
 
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 px-4 rounded-lg font-medium"
+                  disabled={updateUser.isPending}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancelar
                 </button>
@@ -409,6 +553,32 @@ const ProfileDashboard: React.FC = () => {
           </motion.div>
         )}
 
+        {/* Notification */}
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <div className={`px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 ${
+              notification.type === 'success' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-red-500 text-white'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                notification.type === 'success' ? 'bg-green-200' : 'bg-red-200'
+              }`}></div>
+              <span className="font-medium">{notification.message}</span>
+              <button
+                onClick={() => setNotification(null)}
+                className="ml-2 text-white/80 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

@@ -169,6 +169,7 @@ export interface Device {
   description?: string;
   version?: string;
   category: 'microcontroller' | 'sensor';
+  user_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -204,6 +205,7 @@ export interface CreateDeviceInput {
   description?: string;
   version?: string;
   category: 'microcontroller' | 'sensor';
+  user_id?: string;
 }
 
 export interface UpdateDeviceInput {

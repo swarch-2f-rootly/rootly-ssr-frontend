@@ -5,7 +5,7 @@ import { API_CONFIG } from '../config/api';
 const getAuthHeaders = () => {
   if (typeof window === 'undefined') return {};
   
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('access_token');
   console.log('🔑 Auth token from localStorage:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
   
   const headers = {
@@ -51,7 +51,13 @@ export class RestApiClient {
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
-    return response.json();
+    // Handle 204 No Content or empty responses
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : undefined as T;
   }
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
@@ -65,7 +71,13 @@ export class RestApiClient {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    // Handle 204 No Content or empty responses
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : undefined as T;
   }
 
   async delete<T>(endpoint: string): Promise<T> {
@@ -75,10 +87,33 @@ export class RestApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text().catch(() => '');
+      const error = new Error(`HTTP error! status: ${response.status}`);
+      // Attach additional info for better error handling
+      (error as any).status = response.status;
+      (error as any).statusText = response.statusText;
+      (error as any).responseText = errorText;
+      
+      // Don't log 404 errors as they're expected (e.g., already deleted resources)
+      if (response.status !== 404) {
+        console.error(`DELETE ${endpoint} failed:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+      }
+      
+      throw error;
     }
 
-    return response.json();
+    // Handle 204 No Content or empty responses
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+
+    // Only parse JSON if there's content
+    const text = await response.text();
+    return text ? JSON.parse(text) : undefined as T;
   }
 }
 

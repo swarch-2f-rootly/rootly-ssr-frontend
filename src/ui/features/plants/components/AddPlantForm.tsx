@@ -36,22 +36,54 @@ const AddPlantForm: React.FC = () => {
       try {
         console.log('Submitting plant data:', value);
         
-        let photoFilename = null;
+        // Create plant first (photo upload requires a plant_id)
+        console.log('Creating plant first, photo will be uploaded after');
         
-        // For now, we'll create the plant first, then upload the photo
-        // This is because the photo upload endpoint requires a plant_id
-        console.log('Creating plant first, photo will be uploaded separately');
-        
-        // Create plant using the API
-        await createPlantMutation.mutateAsync({
+        const createdPlant = await createPlantMutation.mutateAsync({
           name: value.name,
           species: value.species,
           description: value.description,
           user_id: user?.id || '',
-          photo_filename: photoFilename,
+          photo_filename: null, // Will be updated after upload
         });
         
-        console.log('Plant created successfully');
+        console.log('Plant created successfully:', createdPlant);
+        
+        // Upload photo if one was selected
+        if (selectedFile && createdPlant?.id) {
+          console.log('Uploading photo for plant:', createdPlant.id);
+          
+          try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            const token = localStorage.getItem('access_token');
+            const headers: HeadersInit = {};
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const photoResponse = await fetch(`/api/plants/${createdPlant.id}/photo`, {
+              method: 'POST',
+              headers,
+              body: formData,
+            });
+            
+            if (!photoResponse.ok) {
+              const errorText = await photoResponse.text();
+              console.error('Photo upload failed:', errorText);
+              // Don't fail the whole creation, just log the error
+              setUploadError('La planta se creó pero hubo un error al subir la foto');
+            } else {
+              console.log('Photo uploaded successfully');
+            }
+          } catch (photoError) {
+            console.error('Error uploading photo:', photoError);
+            setUploadError('La planta se creó pero hubo un error al subir la foto');
+          }
+        }
+        
+        console.log('Plant creation process completed');
         router.push('/monitoring?created=true');
       } catch (error) {
         console.error('Error creating plant:', error);

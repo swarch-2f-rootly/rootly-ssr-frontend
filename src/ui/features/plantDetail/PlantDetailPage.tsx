@@ -10,6 +10,9 @@ import {
   Sun,
 } from "lucide-react";
 import { usePlant, useDeletePlant } from "@/lib/api/plants-api";
+import { usePlantDevices } from "@/lib/api/plant-devices-api";
+import { usePlantChartData } from "@/lib/graphql/hooks";
+import { useRealtimeMonitoring, useLatestMeasurement } from "@/lib/graphql/realtime-queries";
 import { useAuth } from "@/hooks/useAuth";
 
 // Importar componentes separados
@@ -19,6 +22,7 @@ import Header from "./components/Header";
 import PlantInfoCard from "./components/PlantInfoCard";
 import PlantDevicesManager from "./components/PlantDevicesManager";
 import PlantCharts from "./components/PlantCharts";
+import MetricDetailsModal from "./components/MetricDetailsModal";
 
 interface PlantData {
   soilHumidity: number;
@@ -55,22 +59,25 @@ const PlantDetailPage: React.FC = () => {
   // Estado para modales de métricas
   const [openModal, setOpenModal] = useState<'temperature' | 'air_humidity' | 'soil_humidity' | 'light_intensity' | null>(null);
 
+  // Estado para métricas en tiempo real
+  const [realtimeMetrics, setRealtimeMetrics] = useState({
+    temperature: 0,
+    airHumidity: 0,
+    soilHumidity: 0,
+    lightLevel: 0,
+  });
+
   // Debug: log plantId
   React.useEffect(() => {
     console.log('PlantDetailPage - plantId:', plantId);
   }, [plantId]);
 
-  // Usar la API real
+  // Usar la API real para obtener la planta
   const { data: plant, isLoading, error } = usePlant(plantId);
   const deletePlantMutation = useDeletePlant();
   
-  // Debug: log plant data
-  React.useEffect(() => {
-    console.log('PlantDetailPage - plant data:', { plant, isLoading, error });
-  }, [plant, isLoading, error]);
-  const plantDevices = [
-    // Sin dispositivos asignados por defecto para simular el estado sin hardware
-  ];
+  // Obtener dispositivos asignados a esta planta
+  const { data: plantDevices = [] } = usePlantDevices(plantId);
 
   // Buscar el microcontrolador asignado a esta planta
   const microcontroller = plantDevices.find(device => device.category === 'microcontroller');
@@ -78,7 +85,42 @@ const PlantDetailPage: React.FC = () => {
 
   const hasMicrocontroller = plantDevices.some(device => device.category === 'microcontroller');
   const hasSensor = plantDevices.some(device => device.category === 'sensor');
-  const hasData = hasMicrocontroller && hasSensor; // Solo mostrar datos si hay ambos dispositivos
+  const hasData = hasMicrocontroller && hasSensor;
+
+  // Obtener datos analíticos desde GraphQL usando el controllerId del microcontrolador
+  const { 
+    currentData: analyticsData, 
+    isLoading: analyticsLoading, 
+    error: analyticsError, 
+    hasData: hasAnalyticsData,
+    allMetrics,
+    getMetricAverage,
+    hasTemperature,
+    hasHumidity,
+    hasSoilHumidity,
+    hasLight
+  } = usePlantChartData(controllerId);
+
+  // Hook para datos históricos y gráficas
+  const {
+    chartData: historicalChartData,
+  } = useRealtimeMonitoring(
+    controllerId, 
+    ['temperature', 'air_humidity', 'soil_humidity', 'light_intensity'], 
+    !!controllerId,
+    24
+  );
+
+  // Hook para monitoreo en tiempo real
+  const { 
+    data: latestMeasurementData, 
+    isLoading: isLoadingLatest,
+    error: latestError 
+  } = useLatestMeasurement(
+    controllerId,
+    isMonitoring && !!controllerId,
+    3000
+  );
 
   // Determinar el mensaje de estado del sensor
   const sensorStatus = useMemo(() => {
@@ -110,24 +152,47 @@ const PlantDetailPage: React.FC = () => {
     }));
   }, [sensorStatus]);
 
-  // Simular datos en tiempo real cuando está monitoreando y hay dispositivos
+  // Actualizar currentData con los datos reales del polling cuando está monitoreando
   useEffect(() => {
-    if (!isMonitoring || !hasMicrocontroller) return;
+    if (!latestMeasurementData?.getLatestMeasurement?.measurement) return;
 
-    const interval = setInterval(() => {
-      setCurrentData(prev => ({
-        ...prev,
-        temperature: prev.temperature + (Math.random() - 0.5) * 2,
-        airHumidity: Math.max(0, Math.min(100, prev.airHumidity + (Math.random() - 0.5) * 5)),
-        soilHumidity: Math.max(0, Math.min(100, prev.soilHumidity + (Math.random() - 0.5) * 3)),
-        lightLevel: Math.max(0, prev.lightLevel + (Math.random() - 0.5) * 200),
-        timestamp: new Date().toLocaleTimeString('es-ES'),
-        date: new Date().toLocaleDateString('es-ES')
-      }));
-    }, 3000);
+    const measurement = latestMeasurementData.getLatestMeasurement.measurement;
+    
+    // Actualizar la métrica correspondiente según el tipo
+    setRealtimeMetrics(prev => {
+      const updated = { ...prev };
+      
+      switch (measurement.metricName) {
+        case 'temperature':
+          updated.temperature = measurement.value;
+          break;
+        case 'air_humidity':
+          updated.airHumidity = measurement.value;
+          break;
+        case 'soil_humidity':
+          updated.soilHumidity = measurement.value;
+          break;
+        case 'light_intensity':
+          updated.lightLevel = measurement.value;
+          break;
+      }
+      
+      return updated;
+    });
+  }, [latestMeasurementData]);
 
-    return () => clearInterval(interval);
-  }, [isMonitoring, hasMicrocontroller]);
+  // Combinar datos de analytics y realtime
+  useEffect(() => {
+    setCurrentData(prev => ({
+      ...prev,
+      temperature: realtimeMetrics.temperature ?? analyticsData.temperature ?? 0,
+      airHumidity: realtimeMetrics.airHumidity ?? analyticsData.airHumidity ?? 0,
+      soilHumidity: realtimeMetrics.soilHumidity ?? 0,
+      lightLevel: realtimeMetrics.lightLevel ?? analyticsData.lightLevel ?? 0,
+      timestamp: new Date().toLocaleTimeString('es-ES'),
+      date: new Date().toLocaleDateString('es-ES')
+    }));
+  }, [realtimeMetrics, analyticsData]);
 
   const handleDeletePlant = async () => {
     try {
@@ -307,18 +372,18 @@ const PlantDetailPage: React.FC = () => {
           )}
         </div>
 
-        {/* Plant Charts - Solo mostrar si hay datos */}
-        {hasData ? (
+        {/* Plant Charts - Mostrar siempre si hay controllerId */}
+        {controllerId && (
           <PlantCharts
-            temperatureData={[]} // Mock data - en una app real vendría de la API
-            humidityData={[]}
-            soilHumidityData={[]}
-            lightData={[]}
+            temperatureData={historicalChartData?.temperature || []}
+            humidityData={historicalChartData?.humidity || []}
+            soilHumidityData={historicalChartData?.soilHumidity || []}
+            lightData={historicalChartData?.light || []}
             currentData={currentData}
-            isLoading={false}
-            error={undefined}
+            isLoading={analyticsLoading}
+            error={analyticsError}
           />
-        ) : null}
+        )}
 
         {/* Plant Devices Manager */}
         <PlantDevicesManager 
@@ -359,6 +424,43 @@ const PlantDetailPage: React.FC = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Modales de Métricas */}
+      <MetricDetailsModal
+        isOpen={openModal === 'temperature'}
+        onClose={() => setOpenModal(null)}
+        metricType="temperature"
+        metrics={allMetrics as any}
+        title="Temperatura"
+        icon={<Thermometer className="w-8 h-8" />}
+      />
+      
+      <MetricDetailsModal
+        isOpen={openModal === 'air_humidity'}
+        onClose={() => setOpenModal(null)}
+        metricType="air_humidity"
+        metrics={allMetrics as any}
+        title="Humedad del Aire"
+        icon={<Wind className="w-8 h-8" />}
+      />
+      
+      <MetricDetailsModal
+        isOpen={openModal === 'soil_humidity'}
+        onClose={() => setOpenModal(null)}
+        metricType="soil_humidity"
+        metrics={allMetrics as any}
+        title="Humedad del Suelo"
+        icon={<Droplets className="w-8 h-8" />}
+      />
+      
+      <MetricDetailsModal
+        isOpen={openModal === 'light_intensity'}
+        onClose={() => setOpenModal(null)}
+        metricType="light_intensity"
+        metrics={allMetrics as any}
+        title="Luminosidad"
+        icon={<Sun className="w-8 h-8" />}
+      />
     </div>
   );
 };

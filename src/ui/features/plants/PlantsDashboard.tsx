@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useUserPlants } from '@/lib/api/plants-api';
 import type { Plant } from '@/lib/api/plants-api';
 import { useAuth } from '@/hooks/useAuth';
+import { AuthenticatedImage } from '@/ui/components/AuthenticatedImage';
 
 
 export default function PlantsDashboard() {
@@ -196,21 +197,23 @@ export default function PlantsDashboard() {
                 >
                   <Link href={`/monitoring/${plant.id}`} className="block">
                     <div className="relative">
-                      <img
-                        src={plant.photo_filename 
-                          ? `http://localhost:8080/api/v1/plants/${plant.id}/photo` 
-                          : "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
-                        }
-                        alt={plant.name}
-                        className="w-full h-36 object-cover"
-                        onError={(e) => {
-                          console.log('Image load error for plant:', plant.id, 'photo_filename:', plant.photo_filename);
-                          const target = e.target as HTMLImageElement;
-                          if (target.src !== 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80') {
-                            target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80';
-                          }
-                        }}
-                      />
+                      {plant.photo_filename ? (
+                        <AuthenticatedImage
+                          src={`/api/plants/${plant.id}/photo`}
+                          alt={plant.name}
+                          className="w-full h-36 object-cover"
+                          fallbackSrc="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                          onError={() => {
+                            console.log('Image load error for plant:', plant.id, 'photo_filename:', plant.photo_filename);
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80"
+                          alt={plant.name}
+                          className="w-full h-36 object-cover"
+                        />
+                      )}
                       <div className="absolute top-3 left-3">
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border-emerald-200">
                           Activa

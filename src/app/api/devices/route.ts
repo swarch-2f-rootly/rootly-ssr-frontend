@@ -6,11 +6,13 @@ export async function GET(request: NextRequest) {
   try {
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
+    
+    console.log('🔐 Devices API Route - Auth header received:', authHeader ? 'YES' : 'NO');
 
     // Construir la URL de destino en la API Gateway
     const url = new URL(request.url);
     const searchParams = url.searchParams.toString();
-    const targetUrl = new URL(`/api/v1/plants${searchParams ? `?${searchParams}` : ''}`, BASE_URL);
+    const targetUrl = new URL(`/api/v1/devices${searchParams ? `?${searchParams}` : ''}`, BASE_URL);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -20,6 +22,8 @@ export async function GET(request: NextRequest) {
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
+
+    console.log('🔐 Forwarding to API Gateway with headers:', headers);
 
     // Hacer la petición a la API Gateway
     const response = await fetch(targetUrl.toString(), {
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying plants GET to API Gateway:', error);
+    console.error('Error proxying devices GET to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -52,11 +56,10 @@ export async function POST(request: NextRequest) {
 
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
+    
+    console.log('🔐 Devices POST API Route - Auth header received:', authHeader ? 'YES' : 'NO');
 
-    console.log('🌱 POST /api/plants - Auth header:', authHeader ? 'YES' : 'NO');
-    console.log('🌱 POST /api/plants - Body:', body);
-
-    const targetUrl = new URL('/api/v1/plants', BASE_URL);
+    const targetUrl = new URL('/api/v1/devices', BASE_URL);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -67,20 +70,14 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = authHeader;
     }
 
-    console.log('🌱 Forwarding to API Gateway:', targetUrl.toString());
-    console.log('🌱 Headers:', headers);
-
     const response = await fetch(targetUrl.toString(), {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
 
-    console.log('🌱 API Gateway response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('🌱 API Gateway error:', errorText);
       return NextResponse.json(
         { error: errorText },
         { status: response.status }
@@ -88,13 +85,13 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('🌱 Plant created successfully:', data);
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying plant creation to API Gateway:', error);
+    console.error('Error proxying to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+

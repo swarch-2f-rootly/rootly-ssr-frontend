@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+
+export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ userId: string; deviceId: string }> }
 ) {
   try {
-    const { userId } = await params;
+    const { userId, deviceId } = await params;
 
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
-    
+    const targetUrl = new URL(`/api/v1/devices/users/${userId}/devices/${deviceId}`, BASE_URL);
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -21,24 +23,28 @@ export async function GET(
       headers['Authorization'] = authHeader;
     }
 
-    const response = await fetch(`${BASE_URL}/api/v1/plants/users/${userId}`, {
-      method: 'GET',
+    const response = await fetch(targetUrl.toString(), {
+      method: 'DELETE',
       headers,
     });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('API Gateway error for user plants:', response.status, errorText);
       return NextResponse.json(
         { error: errorText },
         { status: response.status }
       );
     }
 
+    // Return 204 No Content or the response data
+    if (response.status === 204) {
+      return new NextResponse(null, { status: 204 });
+    }
+
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('User plants API error:', error);
+    console.error('Error proxying to API Gateway:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
