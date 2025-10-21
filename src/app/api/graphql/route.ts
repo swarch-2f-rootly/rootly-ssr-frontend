@@ -4,14 +4,8 @@ import axios from 'axios';
 // Función para obtener la URL del servicio de Analytics directamente
 // Nota: Estamos conectando directamente al servicio de analytics para evitar
 // problemas con el proxy reverso del API Gateway en Go con respuestas grandes
-function getAnalyticsServiceUrl(): string {
-  // En Docker: usar el nombre del servicio
-  if (process.env.NODE_ENV === 'production') {
-    return 'http://be-analytics:8000';
-  }
-  
-  // En desarrollo local: usar el puerto expuesto
-  return 'http://localhost:8000';
+function getAnalyticsServiceUrl(): string {  
+  return 'http://api-gateway:8080';
 }
 
 // Middleware para manejar CORS y headers
