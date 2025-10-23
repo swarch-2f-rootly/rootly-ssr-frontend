@@ -33,9 +33,13 @@ interface GraphQLQueryOptions<TData = unknown, TVariables = unknown> extends Omi
 }
 
 // Cliente GraphQL para uso en Server Components
-// Para Server Components, usar la URL completa del API Gateway
-const SERVER_GRAPHQL_ENDPOINT = process.env.API_GATEWAY_URL + '/graphql';
-export const serverGraphQLClient = new GraphQLClient(SERVER_GRAPHQL_ENDPOINT);
+// Para Server Components, usar el endpoint interno de Next.js para evitar problemas de red
+const SERVER_GRAPHQL_ENDPOINT = '/api/graphql';
+export const serverGraphQLClient = new GraphQLClient(SERVER_GRAPHQL_ENDPOINT, {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Hook para Client Components
 export function useGraphQLQuery<TData = unknown, TVariables = unknown>(
@@ -86,9 +90,15 @@ export function useGraphQLQuery<TData = unknown, TVariables = unknown>(
 // Función para Server Components
 export async function serverGraphQLRequest<TData = unknown, TVariables = Record<string, unknown>>(
   query: string,
-  variables?: TVariables
+  variables?: TVariables,
+  authToken?: string
 ): Promise<TData> {
   try {
+    // Configurar headers de autenticación si se proporciona token
+    if (authToken) {
+      serverGraphQLClient.setHeader('Authorization', `Bearer ${authToken}`);
+    }
+
     const result = await serverGraphQLClient.request<TData>(query, variables as object);
     return result;
   } catch (error) {

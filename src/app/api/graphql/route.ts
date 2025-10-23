@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-// Función para obtener la URL del servicio de Analytics directamente
-// Nota: Estamos conectando directamente al servicio de analytics para evitar
-// problemas con el proxy reverso del API Gateway en Go con respuestas grandes
-function getAnalyticsServiceUrl(): string {  
-  return 'http://api-gateway:8080';
+// Función para obtener la URL del API Gateway
+// Usar variable de entorno para mayor flexibilidad
+function getApiGatewayUrl(): string {
+  // En Docker, usar el nombre del servicio
+  // En desarrollo local, usar localhost
+  return process.env.API_GATEWAY_URL || 'http://localhost:8080';
 }
 
 // Middleware para manejar CORS y headers
@@ -39,8 +40,11 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = authHeader;
     }
 
-    const analyticsUrl = getAnalyticsServiceUrl();
-    const targetUrl = `${analyticsUrl}/api/v1/graphql`;
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = `${apiGatewayUrl}/api/v1/graphql`;
+
+    console.log('GraphQL Proxy: Using API Gateway URL:', apiGatewayUrl);
+    console.log('GraphQL Proxy: Target URL:', targetUrl);
 
     // Usar axios para manejar mejor la conexión y respuesta
     const response = await axios.post(targetUrl, body, {
@@ -55,10 +59,13 @@ export async function POST(request: NextRequest) {
         forcedJSONParsing: true,
         clarifyTimeoutError: false,
       },
-      // Deshabilitar HTTP agent pooling para evitar problemas de conexión
+      // Forzar IPv4 y deshabilitar HTTP agent pooling para evitar problemas de conexión
       httpAgent: new (await import('http')).Agent({
         keepAlive: false,
+        family: 4, // Forzar IPv4
       }),
+      // Configuración adicional para resolver problemas de DNS
+      lookup: (await import('dns')).lookup,
     });
 
     // Devolver la respuesta tal como viene del servicio de analytics
@@ -108,7 +115,7 @@ export async function GET(request: NextRequest) {
       headers['Authorization'] = authHeader;
     }
 
-    const analyticsUrl = getAnalyticsServiceUrl();
+    const analyticsUrl = getApiGatewayUrl();
     const targetUrl = `${analyticsUrl}/api/v1/graphql`;
 
     const response = await axios.get(targetUrl, {
