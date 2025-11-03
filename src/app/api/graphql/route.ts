@@ -4,9 +4,12 @@ import axios from 'axios';
 // Función para obtener la URL del API Gateway
 // Usar variable de entorno para mayor flexibilidad
 function getApiGatewayUrl(): string {
-  // En Docker, usar el nombre del servicio
-  // En desarrollo local, usar localhost
-  return process.env.API_GATEWAY_URL || 'http://localhost:8080';
+  // Prioridad: BASE_URL > API_GATEWAY_URL > fallback
+  const url = process.env.BASE_URL || process.env.API_GATEWAY_URL || 'http://reverse_proxy:80';
+  console.log('🔍 getApiGatewayUrl - BASE_URL:', process.env.BASE_URL);
+  console.log('🔍 getApiGatewayUrl - API_GATEWAY_URL:', process.env.API_GATEWAY_URL);
+  console.log('🔍 getApiGatewayUrl - Selected URL:', url);
+  return url;
 }
 
 // Middleware para manejar CORS y headers
@@ -43,8 +46,14 @@ export async function POST(request: NextRequest) {
     const apiGatewayUrl = getApiGatewayUrl();
     const targetUrl = `${apiGatewayUrl}/api/v1/graphql`;
 
-    console.log('GraphQL Proxy: Using API Gateway URL:', apiGatewayUrl);
-    console.log('GraphQL Proxy: Target URL:', targetUrl);
+    console.log('🚀 GraphQL Proxy: Using API Gateway URL:', apiGatewayUrl);
+    console.log('🚀 GraphQL Proxy: Target URL:', targetUrl);
+    console.log('🚀 GraphQL Proxy: Process.env.BASE_URL:', process.env.BASE_URL);
+    console.log('🚀 GraphQL Proxy: Process.env.API_GATEWAY_URL:', process.env.API_GATEWAY_URL);
+
+    // Parsear la URL para verificar que esté correcta
+    const urlObj = new URL(targetUrl);
+    console.log('🚀 GraphQL Proxy: Parsed URL - Protocol:', urlObj.protocol, 'Host:', urlObj.host, 'Hostname:', urlObj.hostname, 'Port:', urlObj.port);
 
     // Usar axios para manejar mejor la conexión y respuesta
     const response = await axios.post(targetUrl, body, {
@@ -59,13 +68,11 @@ export async function POST(request: NextRequest) {
         forcedJSONParsing: true,
         clarifyTimeoutError: false,
       },
-      // Forzar IPv4 y deshabilitar HTTP agent pooling para evitar problemas de conexión
+      // Configuración del HTTP agent para Docker
       httpAgent: new (await import('http')).Agent({
         keepAlive: false,
         family: 4, // Forzar IPv4
       }),
-      // Configuración adicional para resolver problemas de DNS
-      lookup: (await import('dns')).lookup,
     });
 
     // Devolver la respuesta tal como viene del servicio de analytics

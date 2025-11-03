@@ -15,7 +15,7 @@ export function getApiGatewayUrl(): string {
     return process.env.API_GATEWAY_URL;
   }
   
-  // Fallback para desarrollo local
-  return 'http://localhost:8080';
+  // Fallback para Docker (usar reverse_proxy)
+  return 'http://reverse_proxy:80';
 }
 
