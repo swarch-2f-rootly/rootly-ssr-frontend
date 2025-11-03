@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: 'standalone',
+  // output: 'standalone', // Deshabilitado para permitir servidor personalizado con HTTPS
   serverExternalPackages: ['graphql-request'],
   env: {
     API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',

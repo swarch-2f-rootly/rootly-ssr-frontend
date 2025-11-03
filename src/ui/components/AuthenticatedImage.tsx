@@ -73,18 +73,14 @@ export function AuthenticatedImage({
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-               // Use direct backend URL to bypass API Gateway bug with image responses
-               let directBackendUrl = src;
-               if (src.includes('/api/plants/')) {
-                 // Plant photos → Plant Management backend (port 8003)
-                 directBackendUrl = src.replace('/api/plants/', 'http://localhost:8003/api/v1/plants/');
-               } else if (src.includes('/api/users/')) {
-                 // User photos → Authentication backend (port 8001)
-                 directBackendUrl = src.replace('/api/users/', 'http://localhost:8001/api/v1/users/');
-               }
+        // Use the original URL which already points to the API Gateway routes
+        // Add cache busting parameter to avoid stale cached responses
+        const urlWithCacheBust = new URL(src, window.location.origin);
+        urlWithCacheBust.searchParams.set('_t', Date.now().toString());
         
-        const response = await fetch(directBackendUrl, {
+        const response = await fetch(urlWithCacheBust.toString(), {
           headers,
+          cache: 'no-cache',
         });
 
         if (!response.ok) {
@@ -93,7 +89,7 @@ export function AuthenticatedImage({
           // Only log detailed errors for debugging, not for normal "photo not found" cases
           if (response.status !== 404) {
             console.error(`Failed to load image: ${response.status} - ${errorText}`, {
-              url: directBackendUrl,
+              url: src,
               status: response.status,
               statusText: response.statusText
             });
