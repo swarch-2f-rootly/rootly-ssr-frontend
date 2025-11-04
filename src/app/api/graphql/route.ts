@@ -5,7 +5,7 @@ import axios from 'axios';
 // Usar variable de entorno para mayor flexibilidad
 function getApiGatewayUrl(): string {
   // Prioridad: BASE_URL > API_GATEWAY_URL > fallback
-  const url = process.env.BASE_URL || process.env.API_GATEWAY_URL || 'http://reverse_proxy:80';
+  const url = process.env.BASE_URL || process.env.API_GATEWAY_URL || 'http://reverse-proxy:80';
   console.log('🔍 getApiGatewayUrl - BASE_URL:', process.env.BASE_URL);
   console.log('🔍 getApiGatewayUrl - API_GATEWAY_URL:', process.env.API_GATEWAY_URL);
   console.log('🔍 getApiGatewayUrl - Selected URL:', url);

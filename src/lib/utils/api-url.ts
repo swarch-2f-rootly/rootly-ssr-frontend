@@ -15,7 +15,7 @@ export function getApiGatewayUrl(): string {
     return process.env.API_GATEWAY_URL;
   }
   
-  // Fallback para Docker (usar reverse_proxy)
-  return 'http://reverse_proxy:80';
+  // Fallback para Docker (usar reverse-proxy)
+  return 'http://reverse-proxy:80';
 }
 
