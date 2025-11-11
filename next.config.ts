@@ -2,13 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: 'standalone',
+  // output: 'standalone', // Deshabilitado para permitir servidor personalizado con HTTPS
   serverExternalPackages: ['graphql-request'],
   env: {
-    API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://localhost:8080',
-    AUTH_URL: process.env.AUTH_URL || 'http://localhost:8080',
-    PLANTS_URL: process.env.PLANTS_URL || 'http://localhost:8080',
-    ANALYTICS_URL: process.env.ANALYTICS_URL || 'http://localhost:8080',
+    API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://reverse-proxy:80',
+    AUTH_URL: process.env.AUTH_URL || 'http://reverse-proxy:80',
+    PLANTS_URL: process.env.PLANTS_URL || 'http://reverse-proxy:80',
+    ANALYTICS_URL: process.env.ANALYTICS_URL || 'http://reverse-proxy:80',
+    BASE_URL: process.env.BASE_URL || 'http://reverse-proxy:80',
   },
   eslint: {
     // Disable ESLint during builds

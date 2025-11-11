@@ -15,7 +15,7 @@ COPY package.json package-lock.json* ./
 RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-retries 5 && \
-    npm ci --omit=dev --no-audit --no-fund --prefer-online
+    npm ci --no-audit --no-fund --prefer-online
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -28,8 +28,8 @@ RUN npm config set fetch-retry-mintimeout 20000 && \
 COPY . .
 
 # Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build
@@ -38,30 +38,44 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy the public folder
-COPY --from=builder /app/public ./public
+# Instalar openssl para generar certificados
+RUN apk add --no-cache openssl
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Copiar node_modules desde builder (incluye todas las dependencias necesarias)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copiar archivos necesarios desde builder
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts ./next.config.ts
+
+# Copiar nuestro server.js personalizado
+COPY --chown=nextjs:nodejs server.js ./
+
+# Crear directorio de certificados y generar certificados SSL
+RUN mkdir -p ./certs && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout ./certs/localhost.key \
+      -out ./certs/localhost.crt \
+      -subj "/C=CO/ST=Bogota/L=Bogota/O=Mi Laboratorio/OU=Dev/CN=localhost" && \
+    chown nextjs:nodejs ./certs/localhost.key ./certs/localhost.crt && \
+    chmod 600 ./certs/localhost.key && \
+    chmod 644 ./certs/localhost.crt
 
 USER nextjs
 
 EXPOSE 3001
 
-ENV PORT 3001
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
 
-# Start the application
+# Start the application using server.js
 CMD ["node", "server.js"]

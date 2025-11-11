@@ -132,7 +132,7 @@ const PlantStatusCard: React.FC<PlantStatusCardProps> = ({
               ) : (
                 <>
                   <Activity className="w-5 h-5" />
-                  Sin Hardware
+                  Iniciar Monitoreo
                 </>
               )}
             </button>

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
+const PLANT_SERVICE_URL =
+  process.env.PLANT_SERVICE_URL || 'http://be-user-plant-management:8000';
+
+async function proxyRequest(
+  url: URL,
+  init: RequestInit
+): Promise<Response> {
+  return fetch(url.toString(), init);
+}
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +21,11 @@ export async function GET(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const gatewayUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const directUrl = new URL(
+      `/api/v1/plants/${plantId}/photo`,
+      PLANT_SERVICE_URL
+    );
 
     const forwardedHeaders = new Headers({
       'Accept': 'image/*',
@@ -22,16 +35,24 @@ export async function GET(
       forwardedHeaders.set('Authorization', authHeader);
     }
 
-    const response = await fetch(targetUrl.toString(), {
+    const fetchOptions: RequestInit = {
       method: 'GET',
       headers: forwardedHeaders,
-    });
+    };
+
+    let response = await proxyRequest(gatewayUrl, fetchOptions);
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch plant photo' },
-        { status: response.status }
-      );
+      // Intentar directamente contra el servicio de plantas
+      const directResponse = await proxyRequest(directUrl, fetchOptions);
+      if (!directResponse.ok) {
+        const status = directResponse.status || response.status || 500;
+        return NextResponse.json(
+          { error: 'Failed to fetch plant photo' },
+          { status }
+        );
+      }
+      response = directResponse;
     }
 
     // Get the image buffer
@@ -65,7 +86,11 @@ export async function POST(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const gatewayUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const directUrl = new URL(
+      `/api/v1/plants/${plantId}/photo`,
+      PLANT_SERVICE_URL
+    );
 
     // Forward the FormData directly
     const formData = await request.formData();
@@ -75,18 +100,26 @@ export async function POST(
       forwardedHeaders.set('Authorization', authHeader);
     }
 
-    const response = await fetch(targetUrl.toString(), {
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: forwardedHeaders,
       body: formData,
-    });
+    };
+
+    let response = await proxyRequest(gatewayUrl, fetchOptions);
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      return NextResponse.json(
-        { error: errorText },
-        { status: response.status }
-      );
+      const directResponse = await proxyRequest(directUrl, fetchOptions);
+      if (!directResponse.ok) {
+        const errorText = await directResponse
+          .text()
+          .catch(() => 'Unknown error');
+        return NextResponse.json(
+          { error: errorText },
+          { status: directResponse.status }
+        );
+      }
+      response = directResponse;
     }
 
     const data = await response.json();
