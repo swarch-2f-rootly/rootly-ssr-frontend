@@ -1,4 +1,5 @@
-const { createServer } = require('https');
+const { createServer: createHttpsServer } = require('https');
+const { createServer: createHttpServer } = require('http');
 const { parse } = require('url');
 const path = require('path');
 const fs = require('fs');
@@ -13,25 +14,34 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-// Ruta a los certificados SSL
-const certPath = path.join(__dirname, 'certs');
-const httpsOptions = {
-    key: fs.readFileSync(path.join(certPath, 'localhost.key')),
-    cert: fs.readFileSync(path.join(certPath, 'localhost.crt')),
-};
+const enableHttps = String(process.env.ENABLE_HTTPS || 'true').toLowerCase() !== 'false';
+
+let httpsOptions = null;
+if (enableHttps) {
+    const certPath = path.join(__dirname, 'certs');
+    httpsOptions = {
+        key: fs.readFileSync(path.join(certPath, 'localhost.key')),
+        cert: fs.readFileSync(path.join(certPath, 'localhost.crt')),
+    };
+}
 
 app.prepare().then(() => {
-    const server = createServer(httpsOptions, (req, res) => {
+    const requestHandler = (req, res) => {
         const parsedUrl = parse(req.url, true);
         handle(req, res, parsedUrl);
-    });
+    };
 
     const port = process.env.PORT || 3001;
     const hostname = process.env.HOSTNAME || '0.0.0.0';
-    
+
+    const server = enableHttps
+        ? createHttpsServer(httpsOptions, requestHandler)
+        : createHttpServer(requestHandler);
+
     server.listen(port, hostname, (err) => {
         if (err) throw err;
-        console.log(`> Servidor HTTPS listo en https://${hostname}:${port}`);
+        const protocol = enableHttps ? 'https' : 'http';
+        console.log(`> Servidor ${protocol.toUpperCase()} listo en ${protocol}://${hostname}:${port}`);
     });
 }).catch((err) => {
     console.error('Error al iniciar el servidor:', err);

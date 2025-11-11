@@ -100,6 +100,12 @@ export function AuthenticatedImage({
 
         const blob = await response.blob();
         objectUrl = URL.createObjectURL(blob);
+        console.log('AuthenticatedImage fetched blob', {
+          src,
+          size: blob.size,
+          type: blob.type,
+        });
+        console.log('AuthenticatedImage created object URL', objectUrl);
         setImageSrc(objectUrl);
       } catch (error) {
         // Only log errors that are not 404 (photo not found is normal)
@@ -166,6 +172,9 @@ export function AuthenticatedImage({
           onError={() => {
             setHasError(true);
             setIsLoading(false);
+            if (fallbackSrc) {
+              setImageSrc(fallbackSrc);
+            }
             if (onError) {
               onError();
             }
