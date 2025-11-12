@@ -1,39 +1,58 @@
-const { createServer } = require('https');
-const { parse } = require('url');
-const path = require('path');
-const fs = require('fs');
+(async () => {
+    const httpsModule = await import('node:https');
+    const httpModule = await import('node:http');
+    const urlModule = await import('node:url');
+    const pathModule = await import('node:path');
+    const fsModule = await import('node:fs');
+    const nextModule = await import('next');
 
-// Cargar Next.js
-const next = require('next');
+    const { createServer: createHttpsServer } = httpsModule;
+    const { createServer: createHttpServer } = httpModule;
+    const { parse } = urlModule;
+    const path = pathModule.default ?? pathModule;
+    const fs = fsModule.default ?? fsModule;
+    const next = nextModule.default ?? nextModule;
 
-// Determinar si estamos en modo desarrollo o producción
-const dev = process.env.NODE_ENV !== 'production';
+    // Determinar si estamos en modo desarrollo o producción
+    const dev = process.env.NODE_ENV !== 'production';
 
-// Inicializar Next.js
-const app = next({ dev });
-const handle = app.getRequestHandler();
+    // Inicializar Next.js
+    const app = next({ dev });
+    const handle = app.getRequestHandler();
 
-// Ruta a los certificados SSL
-const certPath = path.join(__dirname, 'certs');
-const httpsOptions = {
-    key: fs.readFileSync(path.join(certPath, 'localhost.key')),
-    cert: fs.readFileSync(path.join(certPath, 'localhost.crt')),
-};
+    const enableHttps = String(process.env.ENABLE_HTTPS || 'true').toLowerCase() !== 'false';
 
-app.prepare().then(() => {
-    const server = createServer(httpsOptions, (req, res) => {
-        const parsedUrl = parse(req.url, true);
-        handle(req, res, parsedUrl);
-    });
+    let httpsOptions = null;
+    if (enableHttps) {
+        const certPath = path.join(__dirname, 'certs');
+        httpsOptions = {
+            key: fs.readFileSync(path.join(certPath, 'localhost.key')),
+            cert: fs.readFileSync(path.join(certPath, 'localhost.crt')),
+        };
+    }
 
-    const port = process.env.PORT || 3001;
-    const hostname = process.env.HOSTNAME || '0.0.0.0';
-    
-    server.listen(port, hostname, (err) => {
-        if (err) throw err;
-        console.log(`> Servidor HTTPS listo en https://${hostname}:${port}`);
-    });
-}).catch((err) => {
-    console.error('Error al iniciar el servidor:', err);
-    process.exit(1);
-});
+    try {
+        await app.prepare();
+
+        const requestHandler = (req, res) => {
+            const parsedUrl = parse(req.url, true);
+            handle(req, res, parsedUrl);
+        };
+
+        const port = process.env.PORT || 3001;
+        const hostname = process.env.HOSTNAME || '0.0.0.0';
+
+        const server = enableHttps
+            ? createHttpsServer(httpsOptions, requestHandler)
+            : createHttpServer(requestHandler);
+
+        server.listen(port, hostname, (err) => {
+            if (err) throw err;
+            const protocol = enableHttps ? 'https' : 'http';
+            console.log(`> Servidor ${protocol.toUpperCase()} listo en ${protocol}://${hostname}:${port}`);
+        });
+    } catch (error) {
+        console.error('Error al iniciar el servidor:', error);
+        process.exit(1);
+    }
+})();
