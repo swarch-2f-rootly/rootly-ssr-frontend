@@ -1,14 +1,14 @@
 // Environment configuration for Rootly SSR Frontend
 export const ENV_CONFIG = {
   // API Gateway Configuration
-  API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://reverse-proxy:80',
-  NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://reverse-proxy:80',
+  API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://api-gateway:8080',
+  NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api',
   
   // Backend Services
-  AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || 'http://reverse-proxy:80',
-  PLANTS_SERVICE_URL: process.env.PLANTS_SERVICE_URL || 'http://reverse-proxy:80',
-  ANALYTICS_SERVICE_URL: process.env.ANALYTICS_SERVICE_URL || 'http://reverse-proxy:80',
-  DATA_MANAGEMENT_SERVICE_URL: process.env.DATA_MANAGEMENT_SERVICE_URL || 'http://reverse-proxy:80',
+  AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || 'http://api-gateway:8080',
+  PLANTS_SERVICE_URL: process.env.PLANTS_SERVICE_URL || 'http://api-gateway:8080',
+  ANALYTICS_SERVICE_URL: process.env.ANALYTICS_SERVICE_URL || 'http://api-gateway:8080',
+  DATA_MANAGEMENT_SERVICE_URL: process.env.DATA_MANAGEMENT_SERVICE_URL || 'http://api-gateway:8080',
   
   // Next.js Configuration
   NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://reverse-proxy:80',

@@ -24,10 +24,12 @@
 
     let httpsOptions = null;
     if (enableHttps) {
-        const certPath = path.join(__dirname, 'certs');
+        const certPath = process.env.SSL_CERT_PATH || path.join(__dirname, 'certs/localhost.crt');
+        const keyPath = process.env.SSL_KEY_PATH || path.join(__dirname, 'certs/localhost.key');
+
         httpsOptions = {
-            key: fs.readFileSync(path.join(certPath, 'localhost.key')),
-            cert: fs.readFileSync(path.join(certPath, 'localhost.crt')),
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
         };
     }
 
