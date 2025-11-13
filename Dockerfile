@@ -72,9 +72,9 @@ RUN mkdir -p ./certs && \
 
 USER nextjs
 
-EXPOSE 3001
+EXPOSE 3443
 
-ENV PORT=3001
+ENV PORT=3443
 ENV HOSTNAME="0.0.0.0"
 
 # Start the application using server.js

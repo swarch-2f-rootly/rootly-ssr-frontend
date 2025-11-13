@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +11,10 @@ export async function GET(request: NextRequest) {
     // Construir la URL de destino en la API Gateway
     const url = new URL(request.url);
     const searchParams = url.searchParams.toString();
-    const targetUrl = new URL(`/api/v1/devices${searchParams ? `?${searchParams}` : ''}`, BASE_URL);
+    const targetUrl = new URL(
+      `/api/v1/devices${searchParams ? `?${searchParams}` : ''}`,
+      getApiGatewayUrl()
+    );
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     
     console.log('🔐 Devices POST API Route - Auth header received:', authHeader ? 'YES' : 'NO');
 
-    const targetUrl = new URL('/api/v1/devices', BASE_URL);
+    const targetUrl = new URL('/api/v1/devices', getApiGatewayUrl());
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

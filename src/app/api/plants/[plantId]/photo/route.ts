@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 async function proxyRequest(
   url: URL,
@@ -19,7 +18,8 @@ export async function GET(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, apiGatewayUrl);
 
     const forwardedHeaders = new Headers({
       'Accept': 'image/*',
@@ -80,7 +80,8 @@ export async function POST(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, apiGatewayUrl);
 
     // Forward the FormData directly
     const formData = await request.formData();
