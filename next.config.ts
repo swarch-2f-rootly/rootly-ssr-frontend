@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     AUTH_URL: process.env.AUTH_URL || 'http://api-gateway:8080',
     PLANTS_URL: process.env.PLANTS_URL || 'http://api-gateway:8080',
     ANALYTICS_URL: process.env.ANALYTICS_URL || 'http://api-gateway:8080',
-    BASE_URL: process.env.BASE_URL || 'https://reverse-proxy',
+    BASE_URL: process.env.BASE_URL || 'http://api-gateway:8080',
   },
   eslint: {
     // Disable ESLint during builds

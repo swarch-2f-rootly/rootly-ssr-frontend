@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // Try to authenticate through API Gateway first
     const apiGatewayUrl = getApiGatewayUrl();
 
-    // Intentar autenticación vía API Gateway (reverse-proxy)
+    // Intentar autenticación vía API Gateway directamente
     try {
       console.log('🔐 Attempting login via API Gateway:', `${apiGatewayUrl}/api/v1/auth/login`);
       

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +11,10 @@ export async function POST(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/devices/${deviceId}`, BASE_URL);
+    const targetUrl = new URL(
+      `/api/v1/plants/${plantId}/devices/${deviceId}`,
+      getApiGatewayUrl()
+    );
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -57,7 +59,10 @@ export async function DELETE(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL(`/api/v1/plants/${plantId}/devices/${deviceId}`, BASE_URL);
+    const targetUrl = new URL(
+      `/api/v1/plants/${plantId}/devices/${deviceId}`,
+      getApiGatewayUrl()
+    );
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

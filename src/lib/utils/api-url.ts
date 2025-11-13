@@ -5,16 +5,15 @@
  * - En desarrollo local: usa localhost:8080
  */
 export function getApiGatewayUrl(): string {
-  // Preferir BASE_URL si está definida (para Docker)
-  if (process.env.BASE_URL) {
-    return process.env.BASE_URL;
+  const candidate =
+    process.env.API_GATEWAY_URL?.trim() ??
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL?.trim() ??
+    process.env.BASE_URL?.trim();
+
+  if (candidate && candidate.length > 0) {
+    return candidate;
   }
-  
-  // Luego API_GATEWAY_URL
-  if (process.env.API_GATEWAY_URL) {
-    return process.env.API_GATEWAY_URL;
-  }
-  
+
   // Fallback dentro de Docker: apuntar directamente al servicio api-gateway
   return 'http://api-gateway:8080';
 }

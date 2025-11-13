@@ -2,7 +2,7 @@
 export const ENV_CONFIG = {
   // API Gateway Configuration
   API_GATEWAY_URL: process.env.API_GATEWAY_URL || 'http://api-gateway:8080',
-  NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api',
+  NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://api-gateway:8080',
   
   // Backend Services
   AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || 'http://api-gateway:8080',
@@ -11,7 +11,7 @@ export const ENV_CONFIG = {
   DATA_MANAGEMENT_SERVICE_URL: process.env.DATA_MANAGEMENT_SERVICE_URL || 'http://api-gateway:8080',
   
   // Next.js Configuration
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://reverse-proxy:80',
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'https://rootly-ssr-frontend:3443',
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'your-secret-key-here',
   
   // Environment
@@ -31,7 +31,7 @@ export const ENV_CONFIG = {
   LOG_FORMAT: process.env.LOG_FORMAT || 'json',
   
   // Testing Configuration
-  TEST_API_GATEWAY_URL: process.env.TEST_API_GATEWAY_URL || 'http://reverse-proxy:80',
+  TEST_API_GATEWAY_URL: process.env.TEST_API_GATEWAY_URL || 'http://api-gateway:8080',
   TEST_DATABASE_URL: process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/rootly_test',
 } as const;
 
