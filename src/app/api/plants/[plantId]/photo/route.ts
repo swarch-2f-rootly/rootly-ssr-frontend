@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
-const PLANT_SERVICE_URL =
-  process.env.PLANT_SERVICE_URL || 'http://be-user-plant-management:8000';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 async function proxyRequest(
   url: URL,
@@ -21,11 +18,8 @@ export async function GET(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const gatewayUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
-    const directUrl = new URL(
-      `/api/v1/plants/${plantId}/photo`,
-      PLANT_SERVICE_URL
-    );
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, apiGatewayUrl);
 
     const forwardedHeaders = new Headers({
       'Accept': 'image/*',
@@ -40,11 +34,11 @@ export async function GET(
       headers: forwardedHeaders,
     };
 
-    let response = await proxyRequest(gatewayUrl, fetchOptions);
+    let response = await proxyRequest(targetUrl, fetchOptions);
 
     if (!response.ok) {
       // Intentar directamente contra el servicio de plantas
-      const directResponse = await proxyRequest(directUrl, fetchOptions);
+      const directResponse = await proxyRequest(targetUrl, fetchOptions);
       if (!directResponse.ok) {
         const status = directResponse.status || response.status || 500;
         return NextResponse.json(
@@ -86,11 +80,8 @@ export async function POST(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const gatewayUrl = new URL(`/api/v1/plants/${plantId}/photo`, BASE_URL);
-    const directUrl = new URL(
-      `/api/v1/plants/${plantId}/photo`,
-      PLANT_SERVICE_URL
-    );
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = new URL(`/api/v1/plants/${plantId}/photo`, apiGatewayUrl);
 
     // Forward the FormData directly
     const formData = await request.formData();
@@ -106,10 +97,10 @@ export async function POST(
       body: formData,
     };
 
-    let response = await proxyRequest(gatewayUrl, fetchOptions);
+    let response = await proxyRequest(targetUrl, fetchOptions);
 
     if (!response.ok) {
-      const directResponse = await proxyRequest(directUrl, fetchOptions);
+      const directResponse = await proxyRequest(targetUrl, fetchOptions);
       if (!directResponse.ok) {
         const errorText = await directResponse
           .text()

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 export async function GET(
   request: NextRequest,
@@ -10,8 +11,6 @@ export async function GET(
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
-    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -21,7 +20,7 @@ export async function GET(
       headers['Authorization'] = authHeader;
     }
 
-    const response = await fetch(`${BASE_URL}/api/v1/plants/users/${userId}`, {
+    const response = await fetch(`${getApiGatewayUrl()}/api/v1/plants/users/${userId}`, {
       method: 'GET',
       headers,
     });

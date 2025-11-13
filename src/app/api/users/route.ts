@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const BASE_URL = process.env.BASE_URL || 'http://reverse-proxy:80';
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const targetUrl = new URL('/api/v1/users', BASE_URL);
+    const targetUrl = new URL('/api/v1/users', getApiGatewayUrl());
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Get auth token from request headers
     const authHeader = request.headers.get('Authorization');
 
-    const targetUrl = new URL('/api/v1/users', BASE_URL);
+    const targetUrl = new URL('/api/v1/users', getApiGatewayUrl());
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
-
-// Función para obtener la URL del API Gateway
-// Usar variable de entorno para mayor flexibilidad
-function getApiGatewayUrl(): string {
-  // Prioridad: BASE_URL > API_GATEWAY_URL > fallback
-  const url = process.env.BASE_URL || process.env.API_GATEWAY_URL || 'http://reverse-proxy:80';
-  console.log('🔍 getApiGatewayUrl - BASE_URL:', process.env.BASE_URL);
-  console.log('🔍 getApiGatewayUrl - API_GATEWAY_URL:', process.env.API_GATEWAY_URL);
-  console.log('🔍 getApiGatewayUrl - Selected URL:', url);
-  return url;
-}
+import { getApiGatewayUrl } from '@/lib/utils/api-url';
 
 // Middleware para manejar CORS y headers
 function setCorsHeaders(response: NextResponse) {
@@ -46,10 +36,9 @@ export async function POST(request: NextRequest) {
     const apiGatewayUrl = getApiGatewayUrl();
     const targetUrl = `${apiGatewayUrl}/api/v1/graphql`;
 
-    console.log('🚀 GraphQL Proxy: Using API Gateway URL:', apiGatewayUrl);
-    console.log('🚀 GraphQL Proxy: Target URL:', targetUrl);
-    console.log('🚀 GraphQL Proxy: Process.env.BASE_URL:', process.env.BASE_URL);
     console.log('🚀 GraphQL Proxy: Process.env.API_GATEWAY_URL:', process.env.API_GATEWAY_URL);
+    console.log('🚀 GraphQL Proxy: Process.env.NEXT_PUBLIC_API_GATEWAY_URL:', process.env.NEXT_PUBLIC_API_GATEWAY_URL);
+    console.log('🚀 GraphQL Proxy: Resolved API Gateway URL:', apiGatewayUrl);
 
     // Parsear la URL para verificar que esté correcta
     const urlObj = new URL(targetUrl);
@@ -122,8 +111,8 @@ export async function GET(request: NextRequest) {
       headers['Authorization'] = authHeader;
     }
 
-    const analyticsUrl = getApiGatewayUrl();
-    const targetUrl = `${analyticsUrl}/api/v1/graphql`;
+    const apiGatewayUrl = getApiGatewayUrl();
+    const targetUrl = `${apiGatewayUrl}/api/v1/graphql`;
 
     const response = await axios.get(targetUrl, {
       headers,
